@@ -14,6 +14,11 @@ function(ko,
 	function ViewModel(numberOfStartingNodes){
 		var self = this;
 		
+		self.isRunning = ko.observable(true);
+		self.pause = function(){
+			self.isRunning(false);
+		};
+
 		self.logContents = ko.observableArray([]);
 		self.log = function(logMessage){
 			self.logContents.unshift(logMessage);

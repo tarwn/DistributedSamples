@@ -11,6 +11,8 @@
 </head>
 <body>
 <div class="container">
+	<input type="button" value="pause" data-bind="click: pause, enabled: isRunning" />
+
 	<div class="log" data-bind="foreach: logContents">
 		<div data-bind="text: $data"></div>
 	</div>
@@ -61,27 +63,61 @@ function(ko,
 	var vm = new ViewModel(3);
 	ko.applyBindings(vm);
 
-	var script = [
-		new Message("M0", CONST.MESSAGE_TYPES.Write, "D0:data 0"),
-		new Message("M1", CONST.MESSAGE_TYPES.Write, "D1:data 1"),
-		new Message("M2", CONST.MESSAGE_TYPES.Write, "D2:data 2"),
-		new Message("M3", CONST.MESSAGE_TYPES.Write, "D3:data 3"),
-		new Message("M4", CONST.MESSAGE_TYPES.Read, "D3"),
-		new Message("M5", CONST.MESSAGE_TYPES.Read, "D3"),
-		new Message("M6", CONST.MESSAGE_TYPES.Write, "D4:data 4"),
-		new Message("M7", CONST.MESSAGE_TYPES.Write, "D5:data 5"),
-		new Message("M8", CONST.MESSAGE_TYPES.Read, "D3"),
-		new Message("M9", CONST.MESSAGE_TYPES.Read, "D5")
-	];
+	var potentialDataValues = {
+		"D0": [0],
+		"D1": [0],
+		"D2": [0],
+		"D3": [0],
+		"D4": [0],
+		"D5": [0],
+		"D6": [0],
+		"D7": [0]
+	};
+	var msgCount = 0;
 
 	function processNextMessage(){
-		var message = script.shift();
+		if(!vm.isRunning())
+			return;
 
-		var randomNode = Math.floor(Math.random() * vm.network.nodes().length);
-		vm.network.deliverMessage(message, vm.network.nodes()[randomNode]).then(function(){
-			if(script.length > 0)
+		var randomNodeIndex = Math.floor(Math.random() * vm.network.nodes().length);
+		var randomNode = vm.network.nodes()[randomNodeIndex];
+		
+		var randomDataKeyIndex = Math.floor(Math.random() * Object.keys(potentialDataValues).length);
+		var randomDataKey = Object.keys(potentialDataValues)[randomDataKeyIndex];
+		var operationType = (Math.random() < .5) ? CONST.MESSAGE_TYPES.Read : CONST.MESSAGE_TYPES.Write;
+		
+		if(operationType == CONST.MESSAGE_TYPES.Write){
+			var newValue = Math.floor(Math.random() * 500);
+			potentialDataValues[randomDataKey].unshift(newValue);
+
+			var message = new Message("M" + msgCount, CONST.MESSAGE_TYPES.Write, randomDataKey + ":" + newValue);
+			vm.network.deliverMessage(message, randomNode).then(function(response){
+				console.log("Store " + randomDataKey + ":" + newValue + " -> " + response.status);
 				setTimeout(processNextMessage, 500);	
-		});
+			});
+		}
+		else{
+			var message = new Message("M" + msgCount, CONST.MESSAGE_TYPES.Read, randomDataKey);
+			vm.network.deliverMessage(message, randomNode).then(function(response){
+				if(response.status == "200 OK"){
+					console.log(potentialDataValues);
+					var historyNumber = potentialDataValues[randomDataKey].indexOf(response.payload);
+					if(historyNumber == -1){
+						console.log("Retrieve " + randomDataKey + " -> " + response.status + " :: Received Invalid Value => " + response.payload);
+					}
+					else if(historyNumber == 0) {
+						console.log("Retrieve " + randomDataKey + " -> " + response.status + " :: Received Current => " + response.payload);
+					}
+					else {
+						console.log("Retrieve " + randomDataKey + " -> " + response.status + " :: Received " + historyNumber + " Out Of Date => " + response.payload);
+					}
+				}
+				else{
+					console.log("Retrieve " + randomDataKey + " -> " + response.status);
+				}
+				setTimeout(processNextMessage, 500);	
+			});			
+		}
 	}
 	processNextMessage();
 

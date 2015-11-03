@@ -22,7 +22,7 @@ function(ko,
 			incomingValueAction: ko.observable()
 		};
 		self.display.description = ko.computed(function(){
-			return self.name + ' (' + Math.round(self.display.x()) + ',' + Math.round(self.display.y()) + ')';
+			return self.name; // + ' (' + Math.round(self.display.x()) + ',' + Math.round(self.display.y()) + ')';
 		});
 
 		self.processNewMessage = function(message){

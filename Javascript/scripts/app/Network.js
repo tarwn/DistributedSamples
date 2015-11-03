@@ -53,6 +53,7 @@ function(ko,
 				}
 				
 				self.messages.remove(response);
+				return response;
 			});
 		}
 
