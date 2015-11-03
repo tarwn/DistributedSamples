@@ -15,7 +15,7 @@
 		<div data-bind="text: $data"></div>
 	</div>
 
-	<!-- ko foreach: nodes -->
+	<!-- ko foreach: network.nodes -->
 	<div class="node" data-bind="style: { top: display.y() + 'px', left: display.x() + 'px' }, css: { 'node-status-online': status() == 'online', 'node-status-offline': status() == 'offline' }">
 		<div class="node-name" data-bind="text: display.description"></div>
 		<div class="node-queue">
@@ -35,9 +35,9 @@
 	</div>
 	<!-- /ko -->
 
-	<div data-bind="foreach: messages">
+	<!-- ko foreach: network.messages -->
 		<div data-bind="text: display.description, deliverMessage: $data" class="message" style="position: absolute;"></div>
-	</div>
+	<!-- /ko -->
 
 </div>
 </body>
@@ -77,8 +77,8 @@ function(ko,
 	function processNextMessage(){
 		var message = script.shift();
 
-		var randomNode = Math.floor(Math.random() * vm.nodes().length);
-		vm.deliverMessage(message, vm.nodes()[randomNode]).then(function(){
+		var randomNode = Math.floor(Math.random() * vm.network.nodes().length);
+		vm.network.deliverMessage(message, vm.network.nodes()[randomNode]).then(function(){
 			if(script.length > 0)
 				setTimeout(processNextMessage, 500);	
 		});
