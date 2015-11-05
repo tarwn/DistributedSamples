@@ -12,7 +12,7 @@ function(ko,
 	function Node(name){
 		var self = this;
 		self.name = name;
-		self.status = ko.observable();
+		self.status = ko.observable(CONST.NODE_STATUS.Online);
 		self.specialStatus = ko.observable();
 
 		self.storage = ko.observableArray([]);

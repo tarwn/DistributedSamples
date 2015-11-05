@@ -13,6 +13,10 @@ return {
 	NETWORK_STYLE: {
 		'Any': 'Any',
 		'NetworkSelectedHead': 'NetworkSelectedHead'
+	},
+	NODE_STATUS: {
+		'Online': 'Online',
+		'Offline': 'Offline'
 	}
 }
 

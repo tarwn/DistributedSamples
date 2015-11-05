@@ -28,7 +28,7 @@
 	</div>
 
 	<!-- ko foreach: network.nodes -->
-	<div class="node" data-bind="style: { top: display.y() + 'px', left: display.x() + 'px' }, css: { 'node-status-online': status() == 'online', 'node-status-offline': status() == 'offline' }">
+	<div class="node" data-bind="style: { top: display.y() + 'px', left: display.x() + 'px' }, css: { 'node-status-online': status() == 'Online', 'node-status-offline': status() == 'Offline' }">
 		<div class="node-name" data-bind="text: display.description"></div>
 		<div class="node-queue">
 			Action:
