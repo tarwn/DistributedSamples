@@ -13,6 +13,7 @@ function(ko,
 		var self = this;
 		self.name = name;
 		self.status = ko.observable();
+		self.specialStatus = ko.observable();
 
 		self.storage = ko.observableArray([]);
 
@@ -22,7 +23,10 @@ function(ko,
 			incomingValueAction: ko.observable()
 		};
 		self.display.description = ko.computed(function(){
-			return self.name; // + ' (' + Math.round(self.display.x()) + ',' + Math.round(self.display.y()) + ')';
+			if(self.specialStatus() != null)
+				return self.name + " (" + self.specialStatus() + ")"; 
+			else
+				return self.name;
 		});
 
 		self.processNewMessage = function(message){

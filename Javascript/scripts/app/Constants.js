@@ -9,6 +9,10 @@ return {
 	MESSAGE_TYPES: {
 		'Write': 'Write',
 		'Read':	 'Read'
+	},
+	NETWORK_STYLE: {
+		'Any': 'Any',
+		'NetworkSelectedHead': 'NetworkSelectedHead'
 	}
 }
 

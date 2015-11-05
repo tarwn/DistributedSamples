@@ -5,11 +5,43 @@ function(ko,
 		 Promise,
 		 CONST ){
 
-	function Network(logFunction){
+	function Network(networkDeliveryStyle, logFunction){
 		var self = this;
 		
 		self.nodes = ko.observableArray([]);
+		self.headNode = ko.observable();	// only used for NetworkSelectedHead style
 		self.messages = ko.observableArray([]);
+
+		self.selectRandomNode = function(){
+			var randomNodeIndex = Math.floor(Math.random() * self.nodes().length);
+			return self.nodes()[randomNodeIndex];
+		}
+
+		self.assignHeadNode = function(){
+			self.headNode(self.selectRandomNode());
+			self.nodes().forEach(function(node){
+				if(node == self.headNode()){
+					self.headNode().specialStatus("NH");
+				}
+				else{
+					self.headNode().specialStatus();
+				}
+			});
+		}
+
+		self.deliverExternalMessage = function(message){
+			var targetNode = null;
+			if(networkDeliveryStyle == CONST.NETWORK_STYLE.Any){
+				targetNode = self.selectRandomNode();
+			}
+			else{
+				if(self.headNode() == null)
+					self.assignHeadNode();
+				targetNode = self.headNode();
+			}
+
+			return self.deliverMessage(message, targetNode);
+		}
 
 		self.deliverMessage = function(message, node){
 			logFunction(message.display.description + ' sent to node ' + node.name);

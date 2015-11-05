@@ -58,69 +58,97 @@ function(ko,
 		 Node,
 		 Message,
 		 MessageResponse,
-		 StoredData ){
+		 StoredData){
 	
-	var vm = new ViewModel(3);
+//	var vm = new ViewModel(3, CONST.NETWORK_STYLE.Any);
+	var vm = new ViewModel(3, CONST.NETWORK_STYLE.NetworkSelectedHead);
 	ko.applyBindings(vm);
 
 	var potentialDataValues = {
-		"D0": [0],
-		"D1": [0],
-		"D2": [0],
-		"D3": [0],
-		"D4": [0],
-		"D5": [0],
-		"D6": [0],
-		"D7": [0]
+		"D0": [],
+		"D1": [],
+		"D2": [],
+		"D3": [],
+		"D4": [],
+		"D5": [],
+		"D6": [],
+		"D7": []
 	};
 	var msgCount = 0;
 
-	function processNextMessage(){
+	function generateMessage() {
 		if(!vm.isRunning())
 			return;
 
-		var randomNodeIndex = Math.floor(Math.random() * vm.network.nodes().length);
-		var randomNode = vm.network.nodes()[randomNodeIndex];
-		
 		var randomDataKeyIndex = Math.floor(Math.random() * Object.keys(potentialDataValues).length);
 		var randomDataKey = Object.keys(potentialDataValues)[randomDataKeyIndex];
 		var operationType = (Math.random() < .5) ? CONST.MESSAGE_TYPES.Read : CONST.MESSAGE_TYPES.Write;
 		
 		if(operationType == CONST.MESSAGE_TYPES.Write){
-			var newValue = Math.floor(Math.random() * 500);
+			var newValue = "" + Math.floor(Math.random() * 500);
 			potentialDataValues[randomDataKey].unshift(newValue);
 
 			var message = new Message("M" + msgCount, CONST.MESSAGE_TYPES.Write, randomDataKey + ":" + newValue);
-			vm.network.deliverMessage(message, randomNode).then(function(response){
-				console.log("Store " + randomDataKey + ":" + newValue + " -> " + response.status);
-				setTimeout(processNextMessage, 500);	
+			vm.network.deliverExternalMessage(message).then(function(response){
+				var result = evaluateWriteResponse(randomDataKey, response);
+				console.log(result.text);
+				setTimeout(generateMessage, 500);	
 			});
 		}
 		else{
+			// if no value has been stored anywhere yet, try another random message/target
+			if(potentialDataValues[randomDataKey].length == 0){
+				generateMessage();
+				return;
+			}
+
 			var message = new Message("M" + msgCount, CONST.MESSAGE_TYPES.Read, randomDataKey);
-			vm.network.deliverMessage(message, randomNode).then(function(response){
-				if(response.status == "200 OK"){
-					console.log(potentialDataValues);
-					var historyNumber = potentialDataValues[randomDataKey].indexOf(response.payload);
-					if(historyNumber == -1){
-						console.log("Retrieve " + randomDataKey + " -> " + response.status + " :: Received Invalid Value => " + response.payload);
-					}
-					else if(historyNumber == 0) {
-						console.log("Retrieve " + randomDataKey + " -> " + response.status + " :: Received Current => " + response.payload);
-					}
-					else {
-						console.log("Retrieve " + randomDataKey + " -> " + response.status + " :: Received " + historyNumber + " Out Of Date => " + response.payload);
-					}
-				}
-				else{
-					console.log("Retrieve " + randomDataKey + " -> " + response.status);
-				}
-				setTimeout(processNextMessage, 500);	
+			vm.network.deliverExternalMessage(message).then(function(response){
+				var result = evaluateReadResponse(randomDataKey, response);
+				console.log(result.text);
+				setTimeout(generateMessage, 500);	
 			});			
 		}
 	}
-	processNextMessage();
 
+	function evaluateWriteResponse(dataKey, response){
+		return {
+			meetsExpectations: true,
+			text: "Store " + response.message.payload + " -> " + response.status
+		};
+	}
+
+	function evaluateReadResponse(dataKey, response){
+		if(response.status == "200 OK"){
+			var historyNumber = potentialDataValues[dataKey].indexOf(response.payload);
+			if(historyNumber == -1){
+				return {
+					meetsExpectations: true,
+					text: "Retrieve " + response.message.payload + " -> " + response.status + " :: Received Invalid Value => " + response.payload
+				};
+			}
+			else if(historyNumber == 0) {
+				return {
+					meetsExpectations: true,
+					text: "Retrieve " + response.message.payload + " -> " + response.status + " :: Received Current => " + response.payload
+				};
+			}
+			else {
+				return {
+					meetsExpectations: true,
+					text: "Retrieve " + response.message.payload + " -> " + response.status + " :: Received " + historyNumber + " Out Of Date => " + response.payload
+				};
+			}
+		}
+		else{
+			return {
+				meetsExpectations: false,
+				text: "Retrieve " + response.message.payload + " -> " + response.status
+			};
+		}
+	}
+
+	generateMessage();
 });
 
 </script>

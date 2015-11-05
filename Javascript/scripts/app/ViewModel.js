@@ -11,7 +11,7 @@ function(ko,
 		 Network,
 		 Node ){
 
-	function ViewModel(numberOfStartingNodes){
+	function ViewModel(numberOfStartingNodes, networkDeliveryStyle){
 		var self = this;
 		
 		self.isRunning = ko.observable(true);
@@ -24,7 +24,7 @@ function(ko,
 			self.logContents.unshift(logMessage);
 		};
 		
-		self.network = new Network(self.log);
+		self.network = new Network(networkDeliveryStyle, self.log);
 
 		for(var i = 0; i < numberOfStartingNodes; i++){
 			self.network.nodes.push(new Node(String.fromCharCode(65 + i)));
