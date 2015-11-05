@@ -45,7 +45,7 @@ function(ko,
 					}
 					else{
 						self.display.incomingValueAction(message.type + ' ' + message.payload + ': 200 OK');
-						resolve(new MessageResponse(message, "200 OK", storedData.value));
+						resolve(new MessageResponse(message, "200 OK", storedData.value()));
 					}
 				}
 				else{
@@ -62,8 +62,15 @@ function(ko,
 			if(data.length > 1){
 				value = data[1];
 			}
-			var storedData = new StoredData(key, value);
-			self.storage.push(storedData);
+
+			var storedData = self.getFromStorage(key);
+			if(storedData != null){
+				storedData.value(value);
+			}
+			else{
+				storedData = new StoredData(key, value);
+				self.storage.push(storedData);
+			}
 			return storedData;
 		};
 

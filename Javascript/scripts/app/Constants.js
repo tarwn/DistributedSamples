@@ -3,8 +3,8 @@ function(){
 
 return {
 	DEFAULTS: {
-		TRANSMIT_TIME:			  1000,
-		TRANSMIT_HUMAN_READ_TIME: 500
+		TRANSMIT_TIME:			  750,
+		TRANSMIT_HUMAN_READ_TIME: 0
 	},
 	MESSAGE_TYPES: {
 		'Write': 'Write',

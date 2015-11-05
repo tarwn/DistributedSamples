@@ -13,8 +13,18 @@
 <div class="container">
 	<input type="button" value="pause" data-bind="click: pause, enabled: isRunning" />
 
-	<div class="log" data-bind="foreach: logContents">
+	<div class="log right">
+		<b>Message Log</b>
+		<!-- ko foreach: logContents -->
 		<div data-bind="text: $data"></div>
+		<!-- /ko -->
+	</div>
+
+	<div class="log">
+		<b>Expectations</b>
+		<!-- ko foreach: externalResults -->
+		<div data-bind="text: meetsExpectations + ': ' + text, css: 'expect-' + meetsExpectations"></div>
+		<!-- /ko -->
 	</div>
 
 	<!-- ko foreach: network.nodes -->
@@ -47,24 +57,16 @@
 
 require(["knockout",
 		 "app/Constants",
-		 "app/ViewModel",
-		 "app/Node",
-		 "app/Message",
-		 "app/MessageResponse",
-		 "app/StoredData" ],
+		 "app/ViewModel" ],
 function(ko,
 		 CONST,
-		 ViewModel,
-		 Node,
-		 Message,
-		 MessageResponse,
-		 StoredData){
+		 ViewModel ){
 	
 //	var vm = new ViewModel(3, CONST.NETWORK_STYLE.Any);
 	var vm = new ViewModel(3, CONST.NETWORK_STYLE.NetworkSelectedHead);
 	ko.applyBindings(vm);
 
-	var potentialDataValues = {
+	vm.startExternalMessageGeneration({
 		"D0": [],
 		"D1": [],
 		"D2": [],
@@ -73,82 +75,7 @@ function(ko,
 		"D5": [],
 		"D6": [],
 		"D7": []
-	};
-	var msgCount = 0;
-
-	function generateMessage() {
-		if(!vm.isRunning())
-			return;
-
-		var randomDataKeyIndex = Math.floor(Math.random() * Object.keys(potentialDataValues).length);
-		var randomDataKey = Object.keys(potentialDataValues)[randomDataKeyIndex];
-		var operationType = (Math.random() < .5) ? CONST.MESSAGE_TYPES.Read : CONST.MESSAGE_TYPES.Write;
-		
-		if(operationType == CONST.MESSAGE_TYPES.Write){
-			var newValue = "" + Math.floor(Math.random() * 500);
-			potentialDataValues[randomDataKey].unshift(newValue);
-
-			var message = new Message("M" + msgCount, CONST.MESSAGE_TYPES.Write, randomDataKey + ":" + newValue);
-			vm.network.deliverExternalMessage(message).then(function(response){
-				var result = evaluateWriteResponse(randomDataKey, response);
-				console.log(result.text);
-				setTimeout(generateMessage, 500);	
-			});
-		}
-		else{
-			// if no value has been stored anywhere yet, try another random message/target
-			if(potentialDataValues[randomDataKey].length == 0){
-				generateMessage();
-				return;
-			}
-
-			var message = new Message("M" + msgCount, CONST.MESSAGE_TYPES.Read, randomDataKey);
-			vm.network.deliverExternalMessage(message).then(function(response){
-				var result = evaluateReadResponse(randomDataKey, response);
-				console.log(result.text);
-				setTimeout(generateMessage, 500);	
-			});			
-		}
-	}
-
-	function evaluateWriteResponse(dataKey, response){
-		return {
-			meetsExpectations: true,
-			text: "Store " + response.message.payload + " -> " + response.status
-		};
-	}
-
-	function evaluateReadResponse(dataKey, response){
-		if(response.status == "200 OK"){
-			var historyNumber = potentialDataValues[dataKey].indexOf(response.payload);
-			if(historyNumber == -1){
-				return {
-					meetsExpectations: true,
-					text: "Retrieve " + response.message.payload + " -> " + response.status + " :: Received Invalid Value => " + response.payload
-				};
-			}
-			else if(historyNumber == 0) {
-				return {
-					meetsExpectations: true,
-					text: "Retrieve " + response.message.payload + " -> " + response.status + " :: Received Current => " + response.payload
-				};
-			}
-			else {
-				return {
-					meetsExpectations: true,
-					text: "Retrieve " + response.message.payload + " -> " + response.status + " :: Received " + historyNumber + " Out Of Date => " + response.payload
-				};
-			}
-		}
-		else{
-			return {
-				meetsExpectations: false,
-				text: "Retrieve " + response.message.payload + " -> " + response.status
-			};
-		}
-	}
-
-	generateMessage();
+	});
 });
 
 </script>

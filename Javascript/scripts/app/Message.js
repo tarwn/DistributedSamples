@@ -17,13 +17,14 @@ function(ko,
 			time: ko.observable(1000),
 			delivered: function(){}
 		};
-
-		if(self.type == CONST.MESSAGE_TYPES.Write)
-			self.display.description = self.name + ' (' + self.type[0] + ' ' + payload + ')';
-		else if(self.type == CONST.MESSAGE_TYPES.Read)
-			self.display.description = self.name + ' (' + self.type[0] + ' ' + payload + ')';
-		else
-			self.display.description = self.name + ' (' + self.type[0] + ')';
+		self.display.description = ko.computed(function(){
+			if(self.type == CONST.MESSAGE_TYPES.Write)
+				return self.name + ' (' + self.type[0] + ' ' + payload + ')';
+			else if(self.type == CONST.MESSAGE_TYPES.Read)
+				return self.name + ' (' + self.type[0] + ' ' + payload + ')';
+			else
+				return self.name + ' (' + self.type[0] + ')';
+		});
 	}
 
 	return Message;

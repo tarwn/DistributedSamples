@@ -44,7 +44,7 @@ function(ko,
 		}
 
 		self.deliverMessage = function(message, node){
-			logFunction(message.display.description + ' sent to node ' + node.name);
+			logFunction(message.display.description() + ' sent to node ' + node.name);
 			
 			return new Promise(function(resolve){
 				message.display.x(node.display.x() - 100); 
@@ -78,10 +78,10 @@ function(ko,
 			})
 			.then(function(){
 				if(response.payload != null){
-					logFunction(response.message.display.description + ' response from node ' + node.name + ': ' + response.status + ' [' + response.payload + ']');
+					logFunction(response.message.display.description() + ' response from node ' + node.name + ': ' + response.status + ' [' + response.payload + ']');
 				}
 				else{
-					logFunction(response.message.display.description + ' response from node ' + node.name + ': ' + response.status);
+					logFunction(response.message.display.description() + ' response from node ' + node.name + ': ' + response.status);
 				}
 				
 				self.messages.remove(response);

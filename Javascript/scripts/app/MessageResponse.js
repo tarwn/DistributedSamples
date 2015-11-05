@@ -18,11 +18,12 @@ function(ko,
 			time: ko.observable(CONST.DEFAULTS.TRANSMIT_TIME),
 			delivered: function(){}
 		};
-		if(self.payload != null)
-			self.display.description = self.message.name + "(" + status + ") " + payload;
-		else
-			self.display.description = self.message.name + "(" + status + ")";
-
+		self.display.description = ko.computed(function(){
+			if(self.payload != null)
+				return self.message.name + "(" + status + ") " + payload;
+			else
+				return self.message.name + "(" + status + ")";
+		});
 	}
 
 	return MessageResponse;

@@ -1,12 +1,15 @@
-define([],
-function(){
+define(['knockout'],
+function(ko){
 
 	function StoredData(key, value){
-		this.key = key;
-		this.value = value;
+		var self = this;
+		self.key = key;
+		self.value = ko.observable(value);
 
 		this.display = {
-			description: key + ":" + value
+			description: ko.computed(function(){
+				return self.key + ":" + self.value();
+			})
 		};
 	}
 
