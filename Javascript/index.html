@@ -11,14 +11,19 @@
 </head>
 <body>
 <div class="container">
-	<input type="button" value="pause" data-bind="click: pause, enabled: isRunning" />
+	<input type="button" value="pause" data-bind="value: pauseLabel, click: togglePause" />
+	<input type="button" value="monkey!" data-bind="value: monkeyLabel, click: toggleMonkey" />
 
+	<!--
 	<div class="log right">
 		<b>Message Log</b>
-		<!-- ko foreach: logContents -->
+		<!-- ko foreach: logContents -- >
 		<div data-bind="text: $data"></div>
-		<!-- /ko -->
+		<!-- /ko -- >
 	</div>
+	-->
+
+	<div class="" data-bind="text: display.description" style="text-align: center;"></div>
 
 	<div class="log">
 		<b>Expectations</b>
@@ -63,7 +68,8 @@ function(ko,
 		 ViewModel ){
 	
 //	var vm = new ViewModel(3, CONST.NETWORK_STYLE.Any);
-	var vm = new ViewModel(3, CONST.NETWORK_STYLE.NetworkSelectedHead);
+//	var vm = new ViewModel(3, CONST.NETWORK_STYLE.NetworkSelectedHead, CONST.ELECTION_TIMING.Immediate);
+	var vm = new ViewModel(3, CONST.NETWORK_STYLE.NetworkSelectedHead, CONST.ELECTION_TIMING.Polled);
 	ko.applyBindings(vm);
 
 	vm.startExternalMessageGeneration({

@@ -23,6 +23,8 @@
 	font-size: 95%;
 	padding: .25em;
 	border-bottom: 1px solid #AAAAAA;
+	border-top-left-radius: 10px;
+	border-top-right-radius: 10px;
 }
 
 .node-queue{

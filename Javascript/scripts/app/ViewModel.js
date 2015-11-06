@@ -13,7 +13,7 @@ function(ko,
 		 Node,
 		 Message ){
 
-	function ViewModel(numberOfStartingNodes, networkDeliveryStyle){
+	function ViewModel(numberOfStartingNodes, networkDeliveryStyle, electionTiming){
 		var self = this;
 		
 		self.logContents = ko.observableArray([]);
@@ -26,11 +26,20 @@ function(ko,
 				self.network.nodes.push(new Node(String.fromCharCode(65 + i)));
 			}
 			self.refreshNodeLayout();
+			self.network.initialize();
 		};
 
 		// -- network and nodes
 
-		self.network = new Network(networkDeliveryStyle, self.log);
+		self.network = new Network(networkDeliveryStyle, electionTiming, self.log);
+		self.display = {
+			description: ko.computed(function(){
+				return self.network.onlineNodes().length + 
+						" of " + self.network.nodes().length + " nodes online, " +
+						"" + networkDeliveryStyle + ", " +
+						"" + electionTiming + " timing";
+			})
+		};
 
 		self.refreshNodeLayout = function(){
 			var verticalScreenOffset = -50;	// bump everything up 50px
@@ -68,24 +77,50 @@ function(ko,
 
 		// -- Simulation
 
-		self.isRunning = ko.observable(true);
-		self.pause = function(){
-			self.isRunning(false);
+		var msgCount = 0;
+		self.isPaused = ko.observable(true);
+		self.isRunning = ko.observable(false);
+		self.pauseLabel = ko.computed(function(){
+			return self.isPaused() ? "run" : "pause";
+		});
+		self.togglePause = function(){
+			self.isPaused(!self.isPaused());
+			if(self.isPaused() == false && self.isRunning() == false){
+				generateMessage();
+			}
 		};
-		self.externalResults = ko.observableArray();
+
+		self.isMonkeyActive = ko.observable(false);
+		self.isMonkeyRunning = ko.observable(false);
+		self.monkeyLabel = ko.computed(function(){
+			return self.isMonkeyActive() ? "cage the monkey" : "unleash the monkey";
+		});
+		self.toggleMonkey = function(){
+			self.isMonkeyActive(!self.isMonkeyActive());
+			if(self.isMonkeyActive() && self.isMonkeyRunning() == false){
+				startTheMonkey();
+			}
+		};
 
 		self.potentialDataValues = [];
-
+		self.externalResults = ko.observableArray();
+		self.logExternalResults = function(results){
+			self.externalResults.unshift(results);
+		};
 		self.startExternalMessageGeneration = function(potentialDataValues){
 			self.potentialDataValues = potentialDataValues;
 			generateMessage();
 		};
 
-		var msgCount = 0;
-
 		function generateMessage() {
-			if(!self.isRunning())
+			if(self.isPaused())
 				return;
+
+			self.isRunning(true);
+			var completeRun = function(){
+				self.isRunning(false);
+				setTimeout(generateMessage, 500);
+			};
 
 			var randomDataKeyIndex = Math.floor(Math.random() * Object.keys(self.potentialDataValues).length);
 			var randomDataKey = Object.keys(self.potentialDataValues)[randomDataKeyIndex];
@@ -98,9 +133,8 @@ function(ko,
 				var message = new Message("M" + msgCount, CONST.MESSAGE_TYPES.Write, randomDataKey + ":" + newValue);
 				self.network.deliverExternalMessage(message).then(function(response){
 					var result = evaluateWriteResponse(randomDataKey, response);
-					self.externalResults.push(result);
-					console.log(self.externalResults());
-					setTimeout(generateMessage, 500);	
+					self.logExternalResults(result);
+					completeRun();
 				});
 			}
 			else{
@@ -113,9 +147,8 @@ function(ko,
 				var message = new Message("M" + msgCount, CONST.MESSAGE_TYPES.Read, randomDataKey);
 				self.network.deliverExternalMessage(message).then(function(response){
 					var result = evaluateReadResponse(randomDataKey, response);
-					self.externalResults.push(result);
-					console.log(self.externalResults());
-					setTimeout(generateMessage, 500);	
+					self.logExternalResults(result);
+					completeRun();
 				});			
 			}
 		}
@@ -155,6 +188,33 @@ function(ko,
 					text: "Read " + response.message.payload + " -> " + response.status
 				};
 			}
+		}
+
+		function startTheMonkey(){
+			if(!self.isMonkeyActive())
+				return;
+
+			self.isMonkeyRunning(true);
+
+			var targetNode = self.network.selectRandomOnlineNode();
+			var onlineTime = Math.random() * 10000;
+
+			targetNode.status(CONST.NODE_STATUS.Offline);
+			setTimeout(function(){	
+				targetNode.status(CONST.NODE_STATUS.Online);				
+				self.logExternalResults({
+					meetsExpectations: CONST.NODE_STATUS.Online,
+					text: targetNode.name + " is online"
+				});
+			}, onlineTime);
+
+			self.logExternalResults({
+				meetsExpectations: CONST.NODE_STATUS.Offline,
+				text: targetNode.name + " is offline"
+			});
+
+			self.isMonkeyRunning(false);
+			setTimeout(startTheMonkey, Math.random() * 30000);
 		}
 
 		self.initialize();

@@ -1,46 +1,101 @@
 define(['knockout', 
 		'bluebird',
-		'app/Constants' ],
+		'app/Constants',
+		'app/MessageResponse' ],
 function(ko, 
 		 Promise,
-		 CONST ){
+		 CONST,
+		 MessageResponse ){
 
-	function Network(networkDeliveryStyle, logFunction){
+	function Network(networkDeliveryStyle, electionTiming, logFunction){
 		var self = this;
 		
 		self.nodes = ko.observableArray([]);
+		self.onlineNodes = ko.computed(function(){
+			return self.nodes().filter(function(node){
+				return node.status() == CONST.NODE_STATUS.Online;
+			});
+		});
 		self.headNode = ko.observable();	// only used for NetworkSelectedHead style
 		self.messages = ko.observableArray([]);
 
-		self.selectRandomNode = function(){
-			var randomNodeIndex = Math.floor(Math.random() * self.nodes().length);
-			return self.nodes()[randomNodeIndex];
+
+		function ensureHeadServerIsAvailable(){
+			if(networkDeliveryStyle == CONST.NETWORK_STYLE.NetworkSelectedHead && electionTiming == CONST.ELECTION_TIMING.Polled){
+				if(self.headNode() == null || self.headNode().status() != CONST.NODE_STATUS.Online){
+					self.assignHeadNode();
+				}
+
+				setTimeout(ensureHeadServerIsAvailable, 10000);
+			}
+		}
+
+		self.initialize = function(){
+			ensureHeadServerIsAvailable();
+		};
+
+		self.selectRandomOnlineNode = function(){
+			if(self.onlineNodes().length == 0)
+				return null;
+
+			var randomNodeIndex = Math.floor(Math.random() * self.onlineNodes().length);
+			return self.onlineNodes()[randomNodeIndex];
 		}
 
 		self.assignHeadNode = function(){
-			self.headNode(self.selectRandomNode());
+			var newHeadNode = self.selectRandomOnlineNode();
+			self.headNode(newHeadNode);
 			self.nodes().forEach(function(node){
-				if(node == self.headNode()){
+				if(node == newHeadNode){
 					self.headNode().specialStatus("NH");
 				}
 				else{
-					self.headNode().specialStatus();
+					self.headNode().specialStatus(null);
 				}
 			});
+		}
+
+		function getUnreachableResponse(message){
+			return new MessageResponse(message, "503 Unreachable");
+		}
+
+		function getUnreachableNode(){
+			return {
+				name: '(outage)',
+				display: {
+					description: ko.observable('no available nodes'),
+					x: ko.observable(0),
+					y: ko.observable(0)
+				}
+			};
 		}
 
 		self.deliverExternalMessage = function(message){
 			var targetNode = null;
 			if(networkDeliveryStyle == CONST.NETWORK_STYLE.Any){
-				targetNode = self.selectRandomNode();
+				targetNode = self.selectRandomOnlineNode();
 			}
 			else{
-				if(self.headNode() == null)
+				if(self.headNode() == null){
 					self.assignHeadNode();
+				}
+				else if(self.headNode().status() != CONST.NODE_STATUS.Online){
+					self.headNode().specialStatus(null);
+					self.headNode(null);
+
+					if(electionTiming == CONST.ELECTION_TIMING.Immediate)
+						self.assignHeadNode();
+				}
+
 				targetNode = self.headNode();
 			}
 
-			return self.deliverMessage(message, targetNode);
+			if(targetNode == null || targetNode.status() != CONST.NODE_STATUS.Online){
+				return self.deliverMessageResponse(getUnreachableResponse(message), getUnreachableNode());
+			}
+			else{
+				return self.deliverMessage(message, targetNode);
+			}
 		}
 
 		self.deliverMessage = function(message, node){
@@ -88,7 +143,6 @@ function(ko,
 				return response;
 			});
 		}
-
 	}
 
 	return Network;

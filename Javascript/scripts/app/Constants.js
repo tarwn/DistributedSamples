@@ -14,6 +14,10 @@ return {
 		'Any': 'Any',
 		'NetworkSelectedHead': 'NetworkSelectedHead'
 	},
+	ELECTION_TIMING: {
+		'Immediate': 'Immediate',
+		'Polled': 'Polled'
+	},
 	NODE_STATUS: {
 		'Online': 'Online',
 		'Offline': 'Offline'
