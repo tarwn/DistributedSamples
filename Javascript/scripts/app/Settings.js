@@ -4,6 +4,7 @@ function(CONST){
 	function Settings(rawValues){
 		// simulation settings
 		this.messageDeliveryTime = rawValues.messageDeliveryTime;
+		this.messageDeliveryJitter = rawValues.messageDeliveryJitter;
 		this.messageAtNodeDelay = rawValues.messageAtNodeDelay;
 
 		// network settings

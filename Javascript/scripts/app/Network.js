@@ -125,13 +125,17 @@ function(ko,
 			}
 		}
 
+		function generateMessageDeliveryTime(){
+			return simulationSettings.messageDeliveryTime + ((Math.random() - .5) * simulationSettings.messageDeliveryJitter);
+		}
+
 		self.deliverMessage = function(message, node){
 			logFunction(message.display.description() + ' sent to node ' + node.name);
 			
 			return new Promise(function(resolve){
 				message.display.x(node.display.x() - 100); 
 				message.display.y(node.display.y()); // add offset for number of outstanding messages to process?
-				message.display.time(simulationSettings.messageDeliveryTime);
+				message.display.time(generateMessageDeliveryTime());
 				message.display.delivered = resolve;
 				// begin delivery animation
 				self.messages.push(message);
@@ -158,7 +162,7 @@ function(ko,
 				response.display.startY(node.display.y());
 				response.display.x(response.message.display.startX()); 
 				response.display.y(response.message.display.startY());
-				response.display.time(simulationSettings.messageDeliveryTime);
+				response.display.time(generateMessageDeliveryTime());
 				response.display.delivered = resolve;
 				// begin delivery
 				self.messages.push(response);
