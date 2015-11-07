@@ -81,7 +81,8 @@
 
 	<div class="network-container">
 		<div class="network-gateway">
-			Network<br/>Gateway
+			Network<br/>Gateway<br/>
+			<span class="network-monitor" data-bind="text: network.monitoringCountDown, css: { 'network-monitor-active': network.isMonitoring }"></span>
 		</div>
 
 		<div data-bind="visible: isInitialized" style="display: none">

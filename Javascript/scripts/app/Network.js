@@ -19,19 +19,38 @@ function(ko,
 		self.headNode = ko.observable();	// only used for GatewaySendsToPrimary style
 		self.messages = ko.observableArray([]);
 
+		var monitorTime = simulationSettings.networkMonitoringTime / 1000;
+		self.isMonitoring = ko.observable(false);
+		self.monitoringCountDown = ko.observable(monitorTime);
 
 		function monitorForOutages(){
 			if(simulationSettings.networkCommunications == CONST.NetworkCommunications.GatewaySendsToPrimary && simulationSettings.networkElectionStyle == CONST.NetworkElectionStyle.Polled){
-				if(self.headNode() == null || self.headNode().status() != CONST.NodeStatus.Online){
-					self.assignHeadNode();
-				}
+				self.monitoringCountDown(self.monitoringCountDown() - 1);
 
-				setTimeout(monitorForOutages, simulationSettings.networkMonitoringTime);
+				if(self.monitoringCountDown() <= 0){
+					self.isMonitoring(true);
+
+					setTimeout(function(){
+						if(self.headNode() == null || self.headNode().status() != CONST.NodeStatus.Online){
+							self.assignHeadNode();
+						}
+						self.isMonitoring(false);
+						self.monitoringCountDown(monitorTime);
+
+						setTimeout(monitorForOutages, 1000);
+					}, 500);
+				}
+				else{
+					setTimeout(monitorForOutages, 1000);
+				}
 			}
 		}
 
 		self.initialize = function(){
 			return new Promise(function(resolve){
+				if(simulationSettings.networkElectionStyle == CONST.NetworkElectionStyle.Immediate || simulationSettings.networkElectionStyle == CONST.NetworkElectionStyle.Polled)
+					self.assignHeadNode();
+
 				monitorForOutages();
 				resolve();
 			});
@@ -47,6 +66,8 @@ function(ko,
 
 		self.assignHeadNode = function(){
 			var newHeadNode = self.selectRandomOnlineNode();
+			var oldHeadNode = self.headNode();
+			
 			self.headNode(newHeadNode);
 			self.nodes().forEach(function(node){
 				if(node == newHeadNode){
@@ -89,9 +110,6 @@ function(ko,
 					self.assignHeadNode();
 				}
 				else if(self.headNode().status() != CONST.NodeStatus.Online){
-					self.headNode().specialStatus(null);
-					self.headNode(null);
-
 					if(simulationSettings.networkElectionStyle == CONST.NetworkElectionStyle.Immediate)
 						self.assignHeadNode();
 				}
@@ -130,7 +148,6 @@ function(ko,
 			})
 			.delay(simulationSettings.messageAtNodeDelay)
 			.then(function(messageResponse){
-				console.log(messageResponse);
 				return self.deliverMessageResponse(messageResponse, node);
 			});
 		};

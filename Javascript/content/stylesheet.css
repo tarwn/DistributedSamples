@@ -34,6 +34,22 @@ body{
 	border-radius: 10px;
 	background-color: white;
 }
+.network-monitor{
+	display: inline-block;
+	margin: 6px 4px;
+	width: 20px;
+	height: 20px;
+	border-radius: 10px;
+	font-size: 10px;
+	color: white;
+	line-height: 20px;
+	text-align: center;
+	background-color: #447744;
+	border:  #118811;
+}
+.network-monitor.network-monitor-active{
+	background-color: #44FF44;
+}
 
 .node{
 	position: absolute; 

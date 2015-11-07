@@ -28,7 +28,7 @@ function(CONST){
 
 		// display
 		this.display = {
-			description: 'Network [' + this.networkCommunications + ', ' + this.networkElectionStyle + '] ' + 
+			description: 'Network [' + this.networkCommunications + ', ' + this.networkElectionStyle + '], ' + 
 						 'Quorum: ' + 'W' + this.writeQuorum + 'R' + this.readQuorum
 		};
 	}
