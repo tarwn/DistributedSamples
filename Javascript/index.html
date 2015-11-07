@@ -12,9 +12,9 @@
 <body>
 
 <div class="" style="text-align: center;">
-	<span data-bind="text: display.description"></span><br/>
-	<input type="button" value="pause" data-bind="value: pauseLabel, click: togglePause" />
-	<input type="button" value="monkey!" data-bind="value: monkeyLabel, click: toggleMonkey" />
+	<span data-bind="text: display.description">Initializing...</span><br/>
+	<input type="button" value="initializing..." data-bind="visible: isInitialized, value: pauseLabel, click: togglePause" style="display: none" />
+	<input type="button" value="initializing..." data-bind="visible: isInitialized, value: monkeyLabel, click: toggleMonkey"  style="display: none"/>
 </div>
 
 <div class="container">
@@ -29,6 +29,44 @@
 	-->
 
 	<div class="log">
+		<span class="log-title">SLA Actual</span><br />
+		<br/>
+		<table class="log-table">
+			<tr class="log-table-stats-head">
+				<td>Reads</td>
+				<td>Total</td>
+				<td>Good</td>
+				<td>Stale</td>
+				<td>Wrong</td>
+				<td>Bad 404</td>
+				<td>Error</td>
+			</tr>
+			<tr class="log-table-stats">
+				<td></td>
+				<td data-bind="text: expectations.reads.totalCount">0</td>
+				<td data-bind="text: expectations.reads.goodCount">0</td>
+				<td data-bind="text: expectations.reads.staleCount">0</td>
+				<td data-bind="text: expectations.reads.invalidCount">0</td>
+				<td data-bind="text: expectations.reads.badCount">0</td>
+				<td data-bind="text: expectations.reads.errorCount">0</td>
+			</tr>
+			<tr><td colspan="6"></td></tr>
+			<tr class="log-table-stats-head">
+				<td>Writes</td>
+				<td>Total</td>
+				<td>Good</td>
+				<td>Error</td>
+			</tr>
+			<tr class="log-table-stats">
+				<td></td>
+				<td data-bind="text: expectations.writes.totalCount">0</td>
+				<td data-bind="text: expectations.writes.goodCount">0</td>
+				<td data-bind="text: expectations.writes.errorCount">0</td>
+			</tr>
+		</table>
+		
+		<br/>
+
 		<span class="log-title">Expectations Log</span><br />
 		<table>
 			<tbody data-bind="foreach: externalResults">
@@ -46,29 +84,32 @@
 			Network<br/>Gateway
 		</div>
 
-		<!-- ko foreach: network.nodes -->
-		<div class="node" data-bind="style: { top: display.y() + 'px', left: display.x() + 'px' }, css: { 'node-status-online': status() == 'Online', 'node-status-offline': status() == 'Offline' }">
-			<div class="node-name" data-bind="text: display.description"></div>
-			<div class="node-queue">
-				Action:
-				<!-- ko if: display.incomingValueAction -->
-				<div data-bind="text: display.incomingValueAction" class="node-storage-slot"></div>
-				<!-- /ko -->
-				<div data-bind="ifnot: display.incomingValueAction, visible: display.incomingValueAction() == null" class="node-storage-slot-empty">n/a</div>
-			</div>
-			<div class="node-storage">
-				Storage:
-				<!-- ko foreach: storage -->
-				<div data-bind="text: display.description" class="node-storage-slot"></div>
-				<!-- /ko -->
-				<div data-bind="if: storage().length == 0, visible: storage().length == 0" class="node-storage-slot-empty">empty</div>
-			</div>
-		</div>
-		<!-- /ko -->
+		<div data-bind="visible: isInitialized" style="display: none">
 
-		<!-- ko foreach: network.messages -->
-			<div data-bind="text: display.description, deliverMessage: $data" class="message" style="position: absolute;"></div>
-		<!-- /ko -->
+			<!-- ko foreach: network.nodes -->
+				<div class="node" data-bind="style: { top: display.y() + 'px', left: display.x() + 'px' }, css: { 'node-status-online': status() == 'Online', 'node-status-offline': status() == 'Offline' }">
+					<div class="node-name" data-bind="text: display.description"></div>
+					<div class="node-queue">
+						Action:
+						<!-- ko if: display.incomingValueAction -->
+						<div data-bind="text: display.incomingValueAction" class="node-storage-slot"></div>
+						<!-- /ko -->
+						<div data-bind="ifnot: display.incomingValueAction, visible: display.incomingValueAction() == null" class="node-storage-slot-empty">n/a</div>
+					</div>
+					<div class="node-storage">
+						Storage:
+						<!-- ko foreach: storage -->
+						<div data-bind="text: display.description" class="node-storage-slot"></div>
+						<!-- /ko -->
+						<div data-bind="if: storage().length == 0, visible: storage().length == 0" class="node-storage-slot-empty">empty</div>
+					</div>
+				</div>
+			<!-- /ko -->
+
+			<!-- ko foreach: network.messages -->
+				<div data-bind="text: display.description, deliverMessage: $data" class="message" style="position: absolute;"></div>
+			<!-- /ko -->
+		</div>
 	</div>
 </div>
 </body>

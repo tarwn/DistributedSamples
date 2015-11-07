@@ -31,7 +31,10 @@ function(ko,
 		}
 
 		self.initialize = function(){
-			monitorForOutages();
+			return new Promise(function(resolve){
+				monitorForOutages();
+				resolve();
+			});
 		};
 
 		self.selectRandomOnlineNode = function(){

@@ -106,3 +106,16 @@ body{
 .log-title{
 	border-bottom: 1px dashed #00DD00;
 }
+
+.log-table{
+	border-collapse: collapse;
+	width: 100%;
+}
+.log-table-stats-head td{
+	text-align: left;
+	padding: 4px 2px 0px 2px;
+}
+.log-table-stats td{
+	text-align: left;
+	padding: 2px;
+}

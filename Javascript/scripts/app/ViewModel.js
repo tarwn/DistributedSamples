@@ -23,12 +23,18 @@ function(ko,
 			self.logContents.unshift(logMessage);
 		};
 		
+		self.isInitialized = ko.observable(false);
 		self.initialize = function(){
 			for(var i = 0; i < numberOfStartingNodes; i++){
 				self.network.nodes.push(new Node(simulationSettings, String.fromCharCode(65 + i)));
 			}
-			self.refreshNodeLayout();
-			self.network.initialize();
+
+			Promise.all([
+				self.refreshNodeLayout(),
+				self.network.initialize()
+			]).then(function(){
+				self.isInitialized(true);
+			});
 		};
 
 		// -- network and nodes
@@ -43,35 +49,40 @@ function(ko,
 		};
 
 		self.refreshNodeLayout = function(){
-			var verticalScreenOffset = -50;	// bump everything up 50px
-			var horizantalScreenOffset = -75;	// bump everything left
+			return new Promise(function(resolve){
 
-			// center point of circle
-			var centerX = width/2;
-			var centerY = height/2;
+				var verticalScreenOffset = -50;	// bump everything up 50px
+				var horizantalScreenOffset = -75;	// bump everything left
 
-			// radius of circle
-			var radius = 0;
-			if(width < height){
-				radius = width/2 * .80;
-			}
-			else{
-				radius = height/2 * .80;
-			}
+				// center point of circle
+				var centerX = width/2;
+				var centerY = height/2;
 
-			// invert radius to flip circle
-			radius = -1 * radius;
+				// radius of circle
+				var radius = 0;
+				if(width < height){
+					radius = width/2 * .80;
+				}
+				else{
+					radius = height/2 * .80;
+				}
 
-			// degrees between items
-			var numPoints = self.network.nodes().length;
-			var step = (Math.PI * 2) / numPoints
+				// invert radius to flip circle
+				radius = -1 * radius;
 
-			// now position them equidistantly around the circle
-			for(var i = 0; i < self.network.nodes().length; i++){
-				var node = self.network.nodes()[i];
-				node.display.x( centerX + radius * Math.sin(step * i) + horizantalScreenOffset);
-				node.display.y( centerY + radius * Math.cos(step * i) + verticalScreenOffset );
-			}		
+				// degrees between items
+				var numPoints = self.network.nodes().length;
+				var step = (Math.PI * 2) / numPoints
+
+				// now position them equidistantly around the circle
+				for(var i = 0; i < self.network.nodes().length; i++){
+					var node = self.network.nodes()[i];
+					node.display.x( centerX + radius * Math.sin(step * i) + horizantalScreenOffset);
+					node.display.y( centerY + radius * Math.cos(step * i) + verticalScreenOffset );
+				}
+
+				resolve();
+			});
 		};
 
 		// -- Simulation
@@ -102,10 +113,58 @@ function(ko,
 		};
 
 		self.potentialDataValues = [];
+
 		self.externalResults = ko.observableArray();
 		self.logExternalResults = function(results){
 			self.externalResults.unshift(results);
+console.log(results);
+			if(results.category == 'Read'){
+				self.expectations.reads.totalCount(self.expectations.reads.totalCount() + 1);
+				switch(results.status){
+					case 'Good':
+						self.expectations.reads.goodCount(self.expectations.reads.goodCount() + 1);
+						break;
+					case 'Stale':
+						self.expectations.reads.staleCount(self.expectations.reads.staleCount() + 1);
+						break;
+					case 'InvalidValue':
+						self.expectations.reads.invalidCount(self.expectations.reads.invalidCount() + 1);
+						break;
+					case 'Bad':
+						self.expectations.reads.badCount(self.expectations.reads.badCount() + 1);
+						break;
+					case 'Error':
+						self.expectations.reads.errorCount(self.expectations.reads.errorCount() + 1);
+						break;
+				}
+			}
+			else if(results.category == 'Write'){
+				self.expectations.writes.totalCount(self.expectations.writes.totalCount() + 1);
+				switch(results.status){
+					case 'Good':
+						self.expectations.writes.goodCount(self.expectations.writes.goodCount() + 1);
+						break;
+					case 'Error':
+						self.expectations.writes.errorCount(self.expectations.writes.errorCount() + 1);
+						break;
+				}
+			}
 		};
+		self.expectations = {};
+		self.expectations.reads = {
+			totalCount:	ko.observable(0),
+			goodCount:	ko.observable(0),
+			staleCount: ko.observable(0),
+			invalidCount: ko.observable(0),
+			badCount: ko.observable(0),
+			errorCount: ko.observable(0)
+		};
+		self.expectations.writes = {
+			totalCount: ko.observable(0),
+			goodCount:	ko.observable(0),
+			errorCount: ko.observable(0)
+		};
+
 		self.startExternalMessageGeneration = function(potentialDataValues){
 			self.potentialDataValues = potentialDataValues;
 			generateMessage();
@@ -159,7 +218,7 @@ function(ko,
 				return new Expectation('Write', 'Good', "Write " + response.message.payload + " -> " + response.status);
 			}
 			else{
-				return Expectation('Write', 'Bad', "Write " + response.message.payload + " -> " + response.status);
+				return new Expectation('Write', 'Error', "Write " + response.message.payload + " -> " + response.status);
 			}
 		}
 
@@ -167,17 +226,20 @@ function(ko,
 			if(response.status == "200 OK"){
 				var historyNumber = self.potentialDataValues[dataKey].indexOf(response.payload);
 				if(historyNumber == -1){
-					return Expectation('Read', 'InvalidValue', "Read " + response.message.payload + " -> " + response.status + " :: Received Invalid Value => " + response.payload);
+					return new Expectation('Read', 'InvalidValue', "Read " + response.message.payload + " -> " + response.status + " :: Received Invalid Value => " + response.payload);
 				}
 				else if(historyNumber == 0) {
-					return Expectation('Read', 'Good', "Read " + response.message.payload + " -> " + response.status + " :: Received Current => " + response.payload);
+					return new Expectation('Read', 'Good', "Read " + response.message.payload + " -> " + response.status + " :: Received Current => " + response.payload);
 				}
 				else {
-					return Expectation('Read', 'Stale', "Read " + response.message.payload + " -> " + response.status + " :: Received " + historyNumber + " Out Of Date => " + response.payload);
+					return new Expectation('Read', 'Stale', "Read " + response.message.payload + " -> " + response.status + " :: Received " + historyNumber + " Out Of Date => " + response.payload);
 				}
 			}
-			else{
-				return Expectation('Read', 'Bad', "Read " + response.message.payload + " -> " + response.status);
+			else if(response.status == "404 Not Found"){
+				return new Expectation('Read', 'Bad', "Read " + response.message.payload + " -> " + response.status);
+			}
+			else {
+				return new Expectation('Read', 'Error', "Read " + response.message.payload + " -> " + response.status);
 			}
 		}
 
