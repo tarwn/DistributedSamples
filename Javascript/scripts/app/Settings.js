@@ -29,7 +29,7 @@ function(CONST){
 		// display
 		this.display = {
 			description: 'Network [' + this.networkCommunications + ', ' + this.networkElectionStyle + '] ' + 
-						 'Quorum: ' + this.writeQuorum + 'W' + this.readQuorum + 'R'
+						 'Quorum: ' + 'W' + this.writeQuorum + 'R' + this.readQuorum
 		};
 	}
 

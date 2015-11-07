@@ -117,7 +117,7 @@ function(ko,
 		self.externalResults = ko.observableArray();
 		self.logExternalResults = function(results){
 			self.externalResults.unshift(results);
-console.log(results);
+
 			if(results.category == 'Read'){
 				self.expectations.reads.totalCount(self.expectations.reads.totalCount() + 1);
 				switch(results.status){
@@ -214,32 +214,32 @@ console.log(results);
 		}
 
 		function evaluateWriteResponse(dataKey, response){
-			if(response.status == "200 OK"){
-				return new Expectation('Write', 'Good', "Write " + response.message.payload + " -> " + response.status);
+			if(response.statusCode == 200){
+				return new Expectation('Write', 'Good', "Write " + response.message.payload + " -> " + response.display.statusDescription);
 			}
 			else{
-				return new Expectation('Write', 'Error', "Write " + response.message.payload + " -> " + response.status);
+				return new Expectation('Write', 'Error', "Write " + response.message.payload + " -> " + response.display.statusDescription);
 			}
 		}
 
 		function evaluateReadResponse(dataKey, response){
-			if(response.status == "200 OK"){
+			if(response.statusCode == 200){
 				var historyNumber = self.potentialDataValues[dataKey].indexOf(response.payload);
 				if(historyNumber == -1){
-					return new Expectation('Read', 'InvalidValue', "Read " + response.message.payload + " -> " + response.status + " :: Received Invalid Value => " + response.payload);
+					return new Expectation('Read', 'InvalidValue', "Read " + response.message.payload + " -> " + response.display.statusDescription + " :: Received Invalid Value => " + response.payload);
 				}
 				else if(historyNumber == 0) {
-					return new Expectation('Read', 'Good', "Read " + response.message.payload + " -> " + response.status + " :: Received Current => " + response.payload);
+					return new Expectation('Read', 'Good', "Read " + response.message.payload + " -> " + response.display.statusDescription + " :: Received Current => " + response.payload);
 				}
 				else {
-					return new Expectation('Read', 'Stale', "Read " + response.message.payload + " -> " + response.status + " :: Received " + historyNumber + " Out Of Date => " + response.payload);
+					return new Expectation('Read', 'Stale', "Read " + response.message.payload + " -> " + response.display.statusDescription + " :: Received " + historyNumber + " Out Of Date => " + response.payload);
 				}
 			}
-			else if(response.status == "404 Not Found"){
-				return new Expectation('Read', 'Bad', "Read " + response.message.payload + " -> " + response.status);
+			else if(response.status == 404){
+				return new Expectation('Read', 'Bad', "Read " + response.message.payload + " -> " + response.display.statusDescription);
 			}
 			else {
-				return new Expectation('Read', 'Error', "Read " + response.message.payload + " -> " + response.status);
+				return new Expectation('Read', 'Error', "Read " + response.message.payload + " -> " + response.display.statusDescription);
 			}
 		}
 

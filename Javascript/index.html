@@ -107,7 +107,7 @@
 			<!-- /ko -->
 
 			<!-- ko foreach: network.messages -->
-				<div data-bind="text: display.description, deliverMessage: $data" class="message" style="position: absolute;"></div>
+				<div data-bind="text: display.description, deliverMessage: $data, css: { 'message-goodnews': display.isGood, 'message-badnews': !display.isGood()}" class="message" style="position: absolute;"></div>
 			<!-- /ko -->
 		</div>
 	</div>

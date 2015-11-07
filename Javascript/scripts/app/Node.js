@@ -55,7 +55,7 @@ function(ko,
 						var quorumWriteMessage = message.cloneForQuorumOperation(123);	// add a transaction number later
 						return network.deliverMessage(quorumWriteMessage, neighbor).then(function(response){
 							// treat bad responses as errors so they won't be considered as part of the fulfilled count for quorum
-							if(response.status != "200 OK"){
+							if(response.statusCode != 200){
 								throw new Error("Bad response");
 							}
 							else{
@@ -68,16 +68,16 @@ function(ko,
 						// commit the write and return
 						self.storeData(dataToStore);
 						self.display.incomingValueAction(message.type + ' ' + dataToStore.key + ': 200 OK');
-						resolve(new MessageResponse(simulationSettings, message, "200 OK"));
+						resolve(new MessageResponse(simulationSettings, message, 200, "OK"));
 					}).catch(Promise.AggregateError, function(err) {
 						self.display.incomingValueAction(message.type + ' ' + dataToStore.key + ': 507 ERR');
-						resolve(new MessageResponse(simulationSettings, message, "507 Write Quorum Not Reached"));
+						resolve(new MessageResponse(simulationSettings, message, 507, "Write Quorum Not Reached"));
 					});
 				}
 				else{
 					self.display.incomingValueAction(message.type + ' ' + dataToStore.key + ': 200 OK');
 					self.storeData(dataToStore);
-					resolve(new MessageResponse(simulationSettings, message, "200 OK"));
+					resolve(new MessageResponse(simulationSettings, message, 200, "OK"));
 				}
 			});
 		}
@@ -87,11 +87,11 @@ function(ko,
 				var storedData = self.getFromStorage(message.payload);
 				if(storedData == null){
 					self.display.incomingValueAction(message.type + ' ' + message.payload + ': 404 Not Found');
-					resolve(new MessageResponse(simulationSettings, message, "404 Not Found"));
+					resolve(new MessageResponse(simulationSettings, message, 404, "Not Found"));
 				}
 				else{
 					self.display.incomingValueAction(message.type + ' ' + message.payload + ': 200 OK');
-					resolve(new MessageResponse(simulationSettings, message, "200 OK", storedData.value()));
+					resolve(new MessageResponse(simulationSettings, message, 200, "OK", storedData.value()));
 				}
 			});
 		}
@@ -99,7 +99,7 @@ function(ko,
 		function performError(message){
 			return new Promise(function(resolve){
 				self.display.incomingValueAction(message.type + ': 500 ERROR');
-				resolve(new MessageResponse(simulationSettings, message, "500 ERROR"));
+				resolve(new MessageResponse(simulationSettings, message, 500, "ERROR"));
 			});
 		}
 

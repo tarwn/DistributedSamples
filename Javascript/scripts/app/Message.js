@@ -16,6 +16,7 @@ function(ko,
 			x: ko.observable(CONST.DEFAULTS.GATEWAY_PORT_X + 50),
 			y: ko.observable(CONST.DEFAULTS.GATEWAY_PORT_Y),
 			time: ko.observable(CONST.DEFAULTS.UNDEFINED_DELIVERY_TIME),
+			isGood: ko.observable(true),
 			delivered: function(){}
 		};
 		self.display.description = ko.computed(function(){

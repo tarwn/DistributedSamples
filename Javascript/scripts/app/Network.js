@@ -65,7 +65,7 @@ function(ko,
 		};
 
 		function getUnreachableResponse(message){
-			return new MessageResponse(simulationSettings, message, "503 Unreachable");
+			return new MessageResponse(simulationSettings, message, 503, "Unreachable");
 		}
 
 		function getUnreachableNode(){
@@ -130,6 +130,7 @@ function(ko,
 			})
 			.delay(simulationSettings.messageAtNodeDelay)
 			.then(function(messageResponse){
+				console.log(messageResponse);
 				return self.deliverMessageResponse(messageResponse, node);
 			});
 		};
@@ -147,10 +148,10 @@ function(ko,
 			})
 			.then(function(){
 				if(response.payload != null){
-					logFunction(response.message.display.description() + ' response from node ' + node.name + ': ' + response.status + ' [' + response.payload + ']');
+					logFunction(response.message.display.description() + ' response from node ' + node.name + ': ' + response.display.statusDescription + ' [' + response.payload + ']');
 				}
 				else{
-					logFunction(response.message.display.description() + ' response from node ' + node.name + ': ' + response.status);
+					logFunction(response.message.display.description() + ' response from node ' + node.name + ': ' + response.display.statusDescription);
 				}
 				
 				self.messages.remove(response);

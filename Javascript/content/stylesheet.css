@@ -75,10 +75,16 @@ body{
 }
 
 .message{
-	border: 1px solid #AAAAAA;
 	padding: .5em;
-	background-color: #ddffdd;
+	border: 1px solid #AAAAAA;
+	background-color: #dddddd;
 	text-align: center;
+}
+.message.message-goodnews{
+	background-color: #ddffdd;
+}
+.message.message-badnews{
+	background-color: #ffdddd;
 }
 
 .log{
