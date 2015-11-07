@@ -1,38 +1,38 @@
 Goal
-=======
+------
 
-Create simulations of several popular distributed systems for us in explaining them and because it's fun.
+The goal is to have fun and learn something by creating simulations of several types of distributed systems.
 
-Terms:
+What some of the naming means:
 
 * Network: combination of the thing that delivers messages from point A to B and any monitoring and gateway activities that occur
 * Node: Individual system in the group of networked systems
 * Storage: Storage that each Node independently manages, basic key/value
 
-External Read/Write messages:
+External Read/Write messages can be:
 
-* directed to a single primary server at the network gateway
-* received by any node, but forwarded to the gateway
-* received and forwarded to a node that manages that range of data
+* directed to a single primary server by the network gateway
+* (not implemented) received by any node, but forwarded to an elected primary
+* (not implemented) received by any node, forwarded to the specific node for that data range
 * received and processed by any node
 
 Node Outages:
 
 * Servers go offline but return to the network
-* Servers go offline and are not returned to the network
+* (not implemented) Servers go offline and are not returned to the network
 
 Elections:
 
 * Network elects a Primary node when communications fails (immediate)
 * Network elects a Primary node when polling check detects the prior Primary is offline
-* Node elections coming soon
+* (not implemented) Node elections
 
 Windows Azure Database
 ========================
 
 https://azure.microsoft.com/en-us/blog/fault-tolerance-in-windows-azure-sql-database/
 
-* 3 Nodes, 2W1R
+* 3 Nodes, W2R1
 * 1 Node is the Primary at all times (I think network selected)
 * Uses consensus "similar to paxos" - I thin this is at te hardware level, not the nodes
 ** Practical experience: Something (not the secondary nodes) monitors the Primary Node to detect outages and force an election
