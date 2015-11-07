@@ -3,7 +3,7 @@ define(['knockout',
 function(ko,
 		 CONST ){
 
-	function MessageResponse(message, status, payload){
+	function MessageResponse(simulationSettings, message, status, payload){
 		var self = this;
 
 		self.message = message;
@@ -15,7 +15,7 @@ function(ko,
 			startY: ko.observable(0),
 			x: ko.observable(200),
 			y: ko.observable(0),
-			time: ko.observable(CONST.DEFAULTS.TRANSMIT_TIME),
+			time: ko.observable(CONST.DEFAULTS.UNDEFINED_DELIVERY_TIME),
 			delivered: function(){}
 		};
 		self.display.description = ko.computed(function(){

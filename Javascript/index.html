@@ -10,9 +10,14 @@
     <script src="scripts/main.js"></script>
 </head>
 <body>
-<div class="container">
+
+<div class="" style="text-align: center;">
+	<span data-bind="text: display.description"></span><br/>
 	<input type="button" value="pause" data-bind="value: pauseLabel, click: togglePause" />
 	<input type="button" value="monkey!" data-bind="value: monkeyLabel, click: toggleMonkey" />
+</div>
+
+<div class="container">
 
 	<!--
 	<div class="log right">
@@ -23,13 +28,17 @@
 	</div>
 	-->
 
-	<div class="" data-bind="text: display.description" style="text-align: center;"></div>
-
 	<div class="log">
 		<b>Expectations</b>
-		<!-- ko foreach: externalResults -->
-		<div data-bind="text: meetsExpectations + ': ' + text, css: 'expect-' + meetsExpectations"></div>
-		<!-- /ko -->
+		<table>
+			<tbody data-bind="foreach: externalResults">
+				<tr>
+					<!--<td data-bind="text: category"></td>-->
+					<td data-bind="text: status"></td>
+					<td data-bind="text: text"></td>
+				</tr>
+			</tbody>
+		</table>
 	</div>
 
 	<!-- ko foreach: network.nodes -->
@@ -62,14 +71,37 @@
 
 require(["knockout",
 		 "app/Constants",
+		 "app/Settings",
 		 "app/ViewModel" ],
 function(ko,
 		 CONST,
+		 Settings,
 		 ViewModel ){
 	
-//	var vm = new ViewModel(3, CONST.NETWORK_STYLE.Any);
-//	var vm = new ViewModel(3, CONST.NETWORK_STYLE.NetworkSelectedHead, CONST.ELECTION_TIMING.Immediate);
-	var vm = new ViewModel(3, CONST.NETWORK_STYLE.NetworkSelectedHead, CONST.ELECTION_TIMING.Polled);
+	var sqlAzureSim = new Settings({
+		// simulation settings
+		messageDeliveryTime:	750,
+		messageAtNodeDelay:		0,
+
+		// network settings
+		networkCommunications:	CONST.NetworkCommunications.GatewaySendsToPrimary,
+		networkElectionStyle:	CONST.NetworkElectionStyle.Polled,
+		
+		// node settings
+		nodeElectionStyle:		null,
+		nodeAdditionStyle:		null,
+		
+		// network operations + monitoring
+		networkMonitoringTime:	10000,
+		timeUntilOfflineNodeIsRemoved: -1,	// never remove bad nodes
+		
+		// monkey settings
+		maximumOfflineNodeRepairTime:	10000,
+		minimumTimeBetweenOutages:		30000
+	});
+
+	
+	var vm = new ViewModel(3, sqlAzureSim);
 	ko.applyBindings(vm);
 
 	vm.startExternalMessageGeneration({
@@ -77,10 +109,7 @@ function(ko,
 		"D1": [],
 		"D2": [],
 		"D3": [],
-		"D4": [],
-		"D5": [],
-		"D6": [],
-		"D7": []
+		"D4": []
 	});
 });
 

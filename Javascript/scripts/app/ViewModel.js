@@ -2,18 +2,20 @@ define(['knockout',
 		'jquery',
 		'bluebird',
 		'app/Constants',
+		'app/Expectation',
+		'app/Message',
 		'app/Network',
-		'app/Node',
-		'app/Message'],
+		'app/Node'],
 function(ko, 
 		 $,
 		 Promise,
 		 CONST,
+		 Expectation,
+		 Message,
 		 Network,
-		 Node,
-		 Message ){
+		 Node ){
 
-	function ViewModel(numberOfStartingNodes, networkDeliveryStyle, electionTiming){
+	function ViewModel(numberOfStartingNodes, simulationSettings){
 		var self = this;
 		
 		self.logContents = ko.observableArray([]);
@@ -23,7 +25,7 @@ function(ko,
 		
 		self.initialize = function(){
 			for(var i = 0; i < numberOfStartingNodes; i++){
-				self.network.nodes.push(new Node(String.fromCharCode(65 + i)));
+				self.network.nodes.push(new Node(simulationSettings, String.fromCharCode(65 + i)));
 			}
 			self.refreshNodeLayout();
 			self.network.initialize();
@@ -31,20 +33,19 @@ function(ko,
 
 		// -- network and nodes
 
-		self.network = new Network(networkDeliveryStyle, electionTiming, self.log);
+		self.network = new Network(simulationSettings, self.log);
 		self.display = {
 			description: ko.computed(function(){
 				return self.network.onlineNodes().length + 
 						" of " + self.network.nodes().length + " nodes online, " +
-						"" + networkDeliveryStyle + ", " +
-						"" + electionTiming + " timing";
+						simulationSettings.display.description;
 			})
 		};
 
 		self.refreshNodeLayout = function(){
 			var verticalScreenOffset = -50;	// bump everything up 50px
 
-			var height = $(window).height();
+			var height = $(window).height() - 100;
 			var width = $(window).width();
 
 			// center point of circle
@@ -116,21 +117,23 @@ function(ko,
 			if(self.isPaused())
 				return;
 
+			msgCount++;
+
 			self.isRunning(true);
 			var completeRun = function(){
 				self.isRunning(false);
-				setTimeout(generateMessage, 500);
+				setTimeout(generateMessage, simulationSettings.messageAtNodeDelay);
 			};
 
 			var randomDataKeyIndex = Math.floor(Math.random() * Object.keys(self.potentialDataValues).length);
 			var randomDataKey = Object.keys(self.potentialDataValues)[randomDataKeyIndex];
-			var operationType = (Math.random() < .5) ? CONST.MESSAGE_TYPES.Read : CONST.MESSAGE_TYPES.Write;
+			var operationType = (Math.random() < .5) ? CONST.MessageTypes.Read : CONST.MessageTypes.Write;
 			
-			if(operationType == CONST.MESSAGE_TYPES.Write){
+			if(operationType == CONST.MessageTypes.Write){
 				var newValue = "" + Math.floor(Math.random() * 500);
 				self.potentialDataValues[randomDataKey].unshift(newValue);
 
-				var message = new Message("M" + msgCount, CONST.MESSAGE_TYPES.Write, randomDataKey + ":" + newValue);
+				var message = new Message(simulationSettings, "M" + msgCount, CONST.MessageTypes.Write, randomDataKey + ":" + newValue);
 				self.network.deliverExternalMessage(message).then(function(response){
 					var result = evaluateWriteResponse(randomDataKey, response);
 					self.logExternalResults(result);
@@ -144,7 +147,7 @@ function(ko,
 					return;
 				}
 
-				var message = new Message("M" + msgCount, CONST.MESSAGE_TYPES.Read, randomDataKey);
+				var message = new Message(simulationSettings, "M" + msgCount, CONST.MessageTypes.Read, randomDataKey);
 				self.network.deliverExternalMessage(message).then(function(response){
 					var result = evaluateReadResponse(randomDataKey, response);
 					self.logExternalResults(result);
@@ -154,39 +157,24 @@ function(ko,
 		}
 
 		function evaluateWriteResponse(dataKey, response){
-			return {
-				meetsExpectations: 'Good',
-				text: "Write " + response.message.payload + " -> " + response.status
-			};
+			return new Expectation('Write', 'Good', "Write " + response.message.payload + " -> " + response.status);
 		}
 
 		function evaluateReadResponse(dataKey, response){
 			if(response.status == "200 OK"){
 				var historyNumber = self.potentialDataValues[dataKey].indexOf(response.payload);
 				if(historyNumber == -1){
-					return {
-						meetsExpectations: 'Error',
-						text: "Read " + response.message.payload + " -> " + response.status + " :: Received Invalid Value => " + response.payload
-					};
+					return Expectation('Read', 'InvalidValue', "Read " + response.message.payload + " -> " + response.status + " :: Received Invalid Value => " + response.payload);
 				}
 				else if(historyNumber == 0) {
-					return {
-						meetsExpectations: 'Good',
-						text: "Read " + response.message.payload + " -> " + response.status + " :: Received Current => " + response.payload
-					};
+					return Expectation('Read', 'Good', "Read " + response.message.payload + " -> " + response.status + " :: Received Current => " + response.payload);
 				}
 				else {
-					return {
-						meetsExpectations: 'Stale',
-						text: "Read " + response.message.payload + " -> " + response.status + " :: Received " + historyNumber + " Out Of Date => " + response.payload
-					};
+					return Expectation('Read', 'Stale', "Read " + response.message.payload + " -> " + response.status + " :: Received " + historyNumber + " Out Of Date => " + response.payload);
 				}
 			}
 			else{
-				return {
-					meetsExpectations: 'Bad',
-					text: "Read " + response.message.payload + " -> " + response.status
-				};
+				return Expectation('Read', 'Bad', "Read " + response.message.payload + " -> " + response.status);
 			}
 		}
 
@@ -197,24 +185,18 @@ function(ko,
 			self.isMonkeyRunning(true);
 
 			var targetNode = self.network.selectRandomOnlineNode();
-			var onlineTime = Math.random() * 10000;
+			var onlineTime = Math.random() * simulationSettings.maximumOfflineNodeRepairTime;
 
-			targetNode.status(CONST.NODE_STATUS.Offline);
+			targetNode.status(CONST.NodeStatus.Offline);
 			setTimeout(function(){	
-				targetNode.status(CONST.NODE_STATUS.Online);				
-				self.logExternalResults({
-					meetsExpectations: CONST.NODE_STATUS.Online,
-					text: targetNode.name + " is online"
-				});
+				targetNode.status(CONST.NodeStatus.Online);		
+				self.logExternalResults(new Expectation('Network', CONST.NodeStatus.Online, targetNode.name + " is online"));
 			}, onlineTime);
 
-			self.logExternalResults({
-				meetsExpectations: CONST.NODE_STATUS.Offline,
-				text: targetNode.name + " is offline"
-			});
+			self.logExternalResults(new Expectation('Network', CONST.NodeStatus.Offline, targetNode.name + " is offline"));
 
 			self.isMonkeyRunning(false);
-			setTimeout(startTheMonkey, Math.random() * 30000);
+			setTimeout(startTheMonkey, Math.random() * simulationSettings.minimumTimeBetweenOutages);
 		}
 
 		self.initialize();

@@ -4,21 +4,23 @@ function(){
 return {
 	DEFAULTS: {
 		TRANSMIT_TIME:			  750,
-		TRANSMIT_HUMAN_READ_TIME: 0
+		TRANSMIT_HUMAN_READ_TIME: 0,
+		UNDEFINED_DELIVERY_TIME: 10000
 	},
-	MESSAGE_TYPES: {
+	MessageTypes: {
 		'Write': 'Write',
 		'Read':	 'Read'
 	},
-	NETWORK_STYLE: {
+	NetworkCommunications: {
 		'Any': 'Any',
-		'NetworkSelectedHead': 'NetworkSelectedHead'
+		'GatewaySendsToPrimary': 'GatewaySendsToPrimary'
 	},
-	ELECTION_TIMING: {
+	NetworkElectionStyle: {
+		'None': 'None',
 		'Immediate': 'Immediate',
 		'Polled': 'Polled'
 	},
-	NODE_STATUS: {
+	NodeStatus: {
 		'Online': 'Online',
 		'Offline': 'Offline'
 	}

@@ -9,10 +9,10 @@ function(ko,
 		 MessageResponse,
 		 StoredData ){
 
-	function Node(name){
+	function Node(simulationSettings, name){
 		var self = this;
 		self.name = name;
-		self.status = ko.observable(CONST.NODE_STATUS.Online);
+		self.status = ko.observable(CONST.NodeStatus.Online);
 		self.specialStatus = ko.observable();
 
 		self.storage = ko.observableArray([]);
@@ -32,25 +32,25 @@ function(ko,
 		self.processNewMessage = function(message){
 			return new Promise(function(resolve){
 				self.display.incomingValueAction(message.type + ' ' + message.payload);
-				if(message.type == CONST.MESSAGE_TYPES.Write){
+				if(message.type == CONST.MessageTypes.Write){
 					var storedData = self.storeData(message.payload);
 					self.display.incomingValueAction(message.type + ' ' + storedData.key + ': 200 OK');
-					resolve(new MessageResponse(message, "200 OK"));
+					resolve(new MessageResponse(simulationSettings, message, "200 OK"));
 				}
-				else if(message.type == CONST.MESSAGE_TYPES.Read){
+				else if(message.type == CONST.MessageTypes.Read){
 					var storedData = self.getFromStorage(message.payload);
 					if(storedData == null){
 						self.display.incomingValueAction(message.type + ' ' + message.payload + ': 404 Not Found');
-						resolve(new MessageResponse(message, "404 Not Found"));
+						resolve(new MessageResponse(simulationSettings, message, "404 Not Found"));
 					}
 					else{
 						self.display.incomingValueAction(message.type + ' ' + message.payload + ': 200 OK');
-						resolve(new MessageResponse(message, "200 OK", storedData.value()));
+						resolve(new MessageResponse(simulationSettings, message, "200 OK", storedData.value()));
 					}
 				}
 				else{
 					self.display.incomingValueAction(message.type + ': 500 ERROR');
-					resolve(new MessageResponse(message, "500 ERROR"));
+					resolve(new MessageResponse(simulationSettings, message, "500 ERROR"));
 				}
 			});
 		};
