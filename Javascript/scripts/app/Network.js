@@ -58,6 +58,12 @@ function(ko,
 			});
 		}
 
+		self.getMyNeighbors = function(requestor){
+			return self.nodes().filter(function(node){
+				return node.name != requestor.name;
+			});
+		};
+
 		function getUnreachableResponse(message){
 			return new MessageResponse(simulationSettings, message, "503 Unreachable");
 		}
@@ -115,7 +121,12 @@ function(ko,
 			.delay(simulationSettings.messageAtNodeDelay)
 			.then(function(){
 				self.messages.remove(message);
-				return node.processNewMessage(message);
+				if(node.status() == CONST.NodeStatus.Online){
+					return node.processNewMessage(message);
+				}
+				else{
+					return getUnreachableResponse(message);
+				}
 			})
 			.delay(simulationSettings.messageAtNodeDelay)
 			.then(function(messageResponse){
@@ -127,8 +138,8 @@ function(ko,
 			return new Promise(function(resolve){
 				response.display.startX(node.display.x() - 100); 
 				response.display.startY(node.display.y());
-				response.display.x(CONST.DEFAULTS.GATEWAY_PORT_X); 
-				response.display.y(CONST.DEFAULTS.GATEWAY_PORT_Y);
+				response.display.x(response.message.display.startX()); 
+				response.display.y(response.message.display.startY());
 				response.display.time(simulationSettings.messageDeliveryTime);
 				response.display.delivered = resolve;
 				// begin delivery

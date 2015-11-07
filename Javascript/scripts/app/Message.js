@@ -8,6 +8,7 @@ function(ko,
 		self.name = name;
 		self.type = messageType;
 		self.payload = payload;
+		self.isForQuorum = false;
 
 		self.display = {
 			startX: ko.observable(CONST.DEFAULTS.GATEWAY_PORT_X),
@@ -25,6 +26,14 @@ function(ko,
 			else
 				return self.name + ' (' + self.type[0] + ')';
 		});
+
+		self.cloneForQuorumOperation = function(){
+			var clone = new Message(simulationSettings, 'Q' + name, messageType, payload);
+			clone.isForQuorum = true;
+			clone.display.startX(self.display.x());
+			clone.display.startY(self.display.y());
+			return clone;
+		};
 	}
 
 	return Message;

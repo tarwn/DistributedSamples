@@ -9,7 +9,7 @@ function(ko,
 		 MessageResponse,
 		 StoredData ){
 
-	function Node(simulationSettings, name){
+	function Node(simulationSettings, name, network){
 		var self = this;
 		self.name = name;
 		self.status = ko.observable(CONST.NodeStatus.Online);
@@ -30,32 +30,80 @@ function(ko,
 		});
 
 		self.processNewMessage = function(message){
-			return new Promise(function(resolve){
-				self.display.incomingValueAction(message.type + ' ' + message.payload);
-				if(message.type == CONST.MessageTypes.Write){
-					var storedData = self.storeData(message.payload);
-					self.display.incomingValueAction(message.type + ' ' + storedData.key + ': 200 OK');
-					resolve(new MessageResponse(simulationSettings, message, "200 OK"));
-				}
-				else if(message.type == CONST.MessageTypes.Read){
-					var storedData = self.getFromStorage(message.payload);
-					if(storedData == null){
-						self.display.incomingValueAction(message.type + ' ' + message.payload + ': 404 Not Found');
-						resolve(new MessageResponse(simulationSettings, message, "404 Not Found"));
-					}
-					else{
-						self.display.incomingValueAction(message.type + ' ' + message.payload + ': 200 OK');
-						resolve(new MessageResponse(simulationSettings, message, "200 OK", storedData.value()));
-					}
-				}
-				else{
-					self.display.incomingValueAction(message.type + ': 500 ERROR');
-					resolve(new MessageResponse(simulationSettings, message, "500 ERROR"));
-				}
-			});
+			switch(message.type){
+				case CONST.MessageTypes.Write:
+					return performWrite(message);
+				case CONST.MessageTypes.Read:
+					return performRead(message);
+				default:
+					return performError(message);
+			}
 		};
 
-		self.storeData = function(rawData){
+		function performWrite(message){
+			return new Promise(function(resolve){
+				self.display.incomingValueAction(message.type + ' ' + message.payload);
+
+				var dataToStore = self.parseData(message.payload);
+
+				if((simulationSettings.replicateWrites || simulationSettings.writeQuorum > 1) && !message.isForQuorum){
+					self.display.incomingValueAction(message.type + ' ' + dataToStore.key + ': pending...');
+
+					// TODO - implement algorithm for finding out neighbors
+					var neighbors = network.getMyNeighbors(self);
+					var quorumWrites = neighbors.map(function(neighbor){
+						var quorumWriteMessage = message.cloneForQuorumOperation(123);	// add a transaction number later
+						return network.deliverMessage(quorumWriteMessage, neighbor).then(function(response){
+							// treat bad responses as errors so they won't be considered as part of the fulfilled count for quorum
+							if(response.status != "200 OK"){
+								throw new Error("Bad response");
+							}
+							else{
+								return response;
+							}
+						});
+					});
+
+					Promise.some(quorumWrites, simulationSettings.writeQuorum - 1).then(function(responses){
+						// commit the write and return
+						self.storeData(dataToStore);
+						self.display.incomingValueAction(message.type + ' ' + dataToStore.key + ': 200 OK');
+						resolve(new MessageResponse(simulationSettings, message, "200 OK"));
+					}).catch(Promise.AggregateError, function(err) {
+						self.display.incomingValueAction(message.type + ' ' + dataToStore.key + ': 507 ERR');
+						resolve(new MessageResponse(simulationSettings, message, "507 Write Quorum Not Reached"));
+					});
+				}
+				else{
+					self.display.incomingValueAction(message.type + ' ' + dataToStore.key + ': 200 OK');
+					self.storeData(dataToStore);
+					resolve(new MessageResponse(simulationSettings, message, "200 OK"));
+				}
+			});
+		}
+
+		function performRead(message){
+			return new Promise(function(resolve){
+				var storedData = self.getFromStorage(message.payload);
+				if(storedData == null){
+					self.display.incomingValueAction(message.type + ' ' + message.payload + ': 404 Not Found');
+					resolve(new MessageResponse(simulationSettings, message, "404 Not Found"));
+				}
+				else{
+					self.display.incomingValueAction(message.type + ' ' + message.payload + ': 200 OK');
+					resolve(new MessageResponse(simulationSettings, message, "200 OK", storedData.value()));
+				}
+			});
+		}
+
+		function performError(message){
+			return new Promise(function(resolve){
+				self.display.incomingValueAction(message.type + ': 500 ERROR');
+				resolve(new MessageResponse(simulationSettings, message, "500 ERROR"));
+			});
+		}
+
+		self.parseData = function(rawData){
 			var data = rawData.split(':');
 			var key = data[0];
 			var value = null;
@@ -63,12 +111,16 @@ function(ko,
 				value = data[1];
 			}
 
-			var storedData = self.getFromStorage(key);
+			return new StoredData(key, value);
+		};
+
+		self.storeData = function(dataToStore){
+			var storedData = self.getFromStorage(dataToStore.key);
 			if(storedData != null){
-				storedData.value(value);
+				storedData.value(dataToStore.value());
 			}
 			else{
-				storedData = new StoredData(key, value);
+				storedData = new StoredData(dataToStore.key, dataToStore.value());
 				self.storage.push(storedData);
 			}
 			return storedData;

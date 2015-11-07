@@ -13,6 +13,9 @@ function(CONST){
 		// node settings
 		this.nodeElectionStyle = rawValues.nodeElectionStyle;
 		this.nodeAdditionStyle = rawValues.nodeAdditionStyle; // how does it sync to come online?
+		this.replicateWrites = rawValues.replicateWrites;		// used independently from writeQuorum, wq>1 or this will cause replication
+		this.writeQuorum = rawValues.writeQuorum;
+		this.readQuorum = rawValues.readQuorum;
 
 		// network operations + monitoring
 		this.networkMonitoringTime = rawValues.networkMonitoringTime;
@@ -25,7 +28,8 @@ function(CONST){
 
 		// display
 		this.display = {
-			description: 'Network [' + this.networkCommunications + ', ' + this.networkElectionStyle + ']'
+			description: 'Network [' + this.networkCommunications + ', ' + this.networkElectionStyle + '] ' + 
+						 'Quorum: ' + this.writeQuorum + 'W' + this.readQuorum + 'R'
 		};
 	}
 

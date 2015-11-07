@@ -26,7 +26,7 @@ function(ko,
 		self.isInitialized = ko.observable(false);
 		self.initialize = function(){
 			for(var i = 0; i < numberOfStartingNodes; i++){
-				self.network.nodes.push(new Node(simulationSettings, String.fromCharCode(65 + i)));
+				self.network.nodes.push(new Node(simulationSettings, String.fromCharCode(65 + i), self.network));
 			}
 
 			Promise.all([
