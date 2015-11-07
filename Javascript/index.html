@@ -15,6 +15,7 @@
 	<span data-bind="text: display.description">Initializing...</span><br/>
 	<input type="button" value="initializing..." data-bind="visible: isInitialized, value: pauseLabel, click: togglePause" style="display: none" />
 	<input type="button" value="initializing..." data-bind="visible: isInitialized, value: monkeyLabel, click: toggleMonkey"  style="display: none"/>
+	<input type="button" value="add node" data-bind="visible: isInitialized, click: addNode"  style="display: none"/>
 </div>
 
 <div class="container">
@@ -42,7 +43,7 @@
 				<td>Error</td>
 			</tr>
 			<tr class="log-table-stats">
-				<td></td>
+				<td data-bind="text: expectations.reads.goodPercent">0</td>
 				<td data-bind="text: expectations.reads.totalCount">0</td>
 				<td data-bind="text: expectations.reads.goodCount">0</td>
 				<td data-bind="text: expectations.reads.staleCount">0</td>
@@ -58,10 +59,19 @@
 				<td>Error</td>
 			</tr>
 			<tr class="log-table-stats">
-				<td></td>
+				<td data-bind="text: expectations.writes.goodPercent">0</td>
 				<td data-bind="text: expectations.writes.totalCount">0</td>
 				<td data-bind="text: expectations.writes.goodCount">0</td>
 				<td data-bind="text: expectations.writes.errorCount">0</td>
+			</tr>
+			<tr><td colspan="6"></td></tr>
+			<tr class="log-table-stats-head">
+				<td>Outages</td>
+				<td>Total</td>
+			</tr>
+			<tr class="log-table-stats">
+				<td></td>
+				<td data-bind="text: expectations.outages.outageCount">0</td>
 			</tr>
 		</table>
 		
@@ -89,6 +99,7 @@
 
 			<!-- ko foreach: network.nodes -->
 				<div class="node" data-bind="style: { top: display.y() + 'px', left: display.x() + 'px' }, css: { 'node-status-online': status() == 'Online', 'node-status-offline': status() == 'Offline' }">
+					<span class="remove-node" data-bind="click: $root.removeNode">X</span>
 					<div class="node-name" data-bind="text: display.description"></div>
 					<div class="node-queue">
 						Action:
@@ -133,7 +144,7 @@ function(ko,
 
 		// network settings
 		networkCommunications:	CONST.NetworkCommunications.GatewaySendsToPrimary,
-		networkElectionStyle:	CONST.NetworkElectionStyle.Polled,
+		networkElectionStyle:	CONST.NetworkElectionStyle.Immediate,
 		
 		// node settings
 		nodeElectionStyle:		null,

@@ -23,14 +23,18 @@ function(ko,
 			self.logContents.unshift(logMessage);
 		};
 		
+		var latestServerNumber = 0;
 		self.isInitialized = ko.observable(false);
 		self.initialize = function(){
 			for(var i = 0; i < numberOfStartingNodes; i++){
-				self.network.nodes.push(new Node(simulationSettings, String.fromCharCode(65 + i), self.network));
+				self.network.nodes.push(new Node(simulationSettings, String.fromCharCode(65 + i), self.network, CONST.NodeStatus.Online));
+				latestServerNumber = i;
 			}
 
+			watchNetwork(self.network);
+
 			Promise.all([
-				self.refreshNodeLayout(),
+				refreshNodeLayout(),
 				self.network.initialize()
 			]).then(function(){
 				self.isInitialized(true);
@@ -48,7 +52,47 @@ function(ko,
 			})
 		};
 
-		self.refreshNodeLayout = function(){
+		self.addNode = function(){
+			latestServerNumber++;
+			var newNode = new Node(simulationSettings, String.fromCharCode(65 + latestServerNumber), self.network, CONST.NodeStatus.Offline);
+			self.network.nodes.push(newNode);
+			newNode.setOnline();
+		};
+
+		self.removeNode = function(nodeToRemove){
+			self.network.nodes.remove(function(node){
+				if(node.name == nodeToRemove.name){
+					node.setOffline();
+					return true;
+				}
+			});
+		};
+
+		function watchNetwork(){
+			self.network.nodes().forEach(function(node){
+				node.status.subscribe(function(newValue){
+					if(newValue == CONST.NodeStatus.Offline){
+						self.expectations.outages.outageCount(self.expectations.outages.outageCount() + 1);
+					}
+				});
+			});
+
+			self.network.nodes.subscribe(function(changes){
+				changes.forEach(function(change){
+					if(change.status == 'added'){
+						node.status.subscribe(function(newValue){
+							if(newValue == CONST.NodeStatus.Offline){
+								self.expectations.outages.outageCount(self.expectations.outages.outageCount() + 1);
+							}
+						});
+					}
+				});
+
+				refreshNodeLayout();
+			});
+		}
+
+		function refreshNodeLayout(){
 			return new Promise(function(resolve){
 
 				var verticalScreenOffset = -50;	// bump everything up 50px
@@ -159,10 +203,25 @@ function(ko,
 			badCount: ko.observable(0),
 			errorCount: ko.observable(0)
 		};
+		self.expectations.reads.goodPercent = ko.computed(function(){
+			if(self.expectations.reads.totalCount() == 0)
+				return "n/a";
+			else
+				return Math.round(100.0 * self.expectations.reads.goodCount() / self.expectations.reads.totalCount()) + "%";
+		});
 		self.expectations.writes = {
 			totalCount: ko.observable(0),
 			goodCount:	ko.observable(0),
 			errorCount: ko.observable(0)
+		};
+		self.expectations.writes.goodPercent = ko.computed(function(){
+		if(self.expectations.writes.totalCount() == 0)
+				return "n/a";
+			else
+				return Math.round(100.0 * self.expectations.writes.goodCount() / self.expectations.writes.totalCount()) + "%";
+		});
+		self.expectations.outages = {
+			outageCount: ko.observable(0)
 		};
 
 		self.startExternalMessageGeneration = function(potentialDataValues){
@@ -188,10 +247,13 @@ function(ko,
 			
 			if(operationType == CONST.MessageTypes.Write){
 				var newValue = "" + Math.floor(Math.random() * 500);
-				self.potentialDataValues[randomDataKey].unshift(newValue);
 
 				var message = new Message(simulationSettings, "M" + msgCount, CONST.MessageTypes.Write, randomDataKey + ":" + newValue);
 				self.network.deliverExternalMessage(message).then(function(response){
+					if(response.statusCode == 200){
+						self.potentialDataValues[randomDataKey].unshift(newValue);
+					}
+
 					var result = evaluateWriteResponse(randomDataKey, response);
 					self.logExternalResults(result);
 					completeRun();

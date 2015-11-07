@@ -11,10 +11,10 @@ function(ko,
 		 MessageResponse,
 		 StoredData ){
 
-	function Node(simulationSettings, name, network){
+	function Node(simulationSettings, name, network, startingStatus){
 		var self = this;
 		self.name = name;
-		self.status = ko.observable(CONST.NodeStatus.Online);
+		self.status = ko.observable(startingStatus);
 		self.specialStatus = ko.observable();
 
 		var outstandingUpdates = [];
