@@ -26,7 +26,7 @@ function(ko,
 					self.assignHeadNode();
 				}
 
-				setTimeout(monitorForOutages, 10000);
+				setTimeout(monitorForOutages, simulationSettings.networkMonitoringTime);
 			}
 		}
 
@@ -64,8 +64,8 @@ function(ko,
 				name: '(outage)',
 				display: {
 					description: ko.observable('no available nodes'),
-					x: ko.observable(0),
-					y: ko.observable(0)
+					x: ko.observable(CONST.DEFAULTS.GATEWAY_PORT_X),
+					y: ko.observable(CONST.DEFAULTS.GATEWAY_PORT_Y)
 				}
 			};
 		}
@@ -124,8 +124,8 @@ function(ko,
 			return new Promise(function(resolve){
 				response.display.startX(node.display.x() - 100); 
 				response.display.startY(node.display.y());
-				response.display.x(0); 
-				response.display.y(0);
+				response.display.x(CONST.DEFAULTS.GATEWAY_PORT_X); 
+				response.display.y(CONST.DEFAULTS.GATEWAY_PORT_Y);
 				response.display.time(simulationSettings.messageDeliveryTime);
 				response.display.delivered = resolve;
 				// begin delivery

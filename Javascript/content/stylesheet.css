@@ -11,6 +11,30 @@ body{
 	background-color: white;
 }
 
+.network-container{
+	position: absolute;
+	top: 0px;
+	left: 500px;
+	right: 0px;
+	bottom: 0px;
+
+	background-color: #eeeeee;
+
+	overflow: hidden;
+}
+
+.network-gateway{
+	position: absolute;
+
+	top: -10px;
+	left: -10px;
+	padding: 20px 14px 14px 20px;
+
+	border: 2px solid #77BB77;
+	border-radius: 10px;
+	background-color: white;
+}
+
 .node{
 	position: absolute; 
 	border: 2px solid gray;
@@ -58,15 +82,18 @@ body{
 }
 
 .log{
-	border: 2px solid #eeeecc;
-	background-color: #ffffdd;
+	border: 1px solid #00DD00;
+	background-color: black;
+	color: #00DD00;
+	font-family: monospace;
+	overflow: hidden;
 	padding: .5em;
 
 	position: absolute;
-	top: 20px;
-	left: 20px;
-	bottom: 20px;
-	width: 500px;
+	top: 0px;
+	left: 0px;
+	bottom: 0px;
+	width: 480px;
 
 	text-overflow: auto;
 }
@@ -74,4 +101,8 @@ body{
 .log.right{
 	left: auto;
 	right: 20px;
+}
+
+.log-title{
+	border-bottom: 1px dashed #00DD00;
 }

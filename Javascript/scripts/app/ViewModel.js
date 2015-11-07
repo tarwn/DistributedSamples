@@ -15,7 +15,7 @@ function(ko,
 		 Network,
 		 Node ){
 
-	function ViewModel(numberOfStartingNodes, simulationSettings){
+	function ViewModel(simulationSettings, numberOfStartingNodes, width, height){
 		var self = this;
 		
 		self.logContents = ko.observableArray([]);
@@ -44,9 +44,7 @@ function(ko,
 
 		self.refreshNodeLayout = function(){
 			var verticalScreenOffset = -50;	// bump everything up 50px
-
-			var height = $(window).height() - 100;
-			var width = $(window).width();
+			var horizantalScreenOffset = -75;	// bump everything left
 
 			// center point of circle
 			var centerX = width/2;
@@ -71,7 +69,7 @@ function(ko,
 			// now position them equidistantly around the circle
 			for(var i = 0; i < self.network.nodes().length; i++){
 				var node = self.network.nodes()[i];
-				node.display.x( centerX + radius * Math.sin(step * i) );
+				node.display.x( centerX + radius * Math.sin(step * i) + horizantalScreenOffset);
 				node.display.y( centerY + radius * Math.cos(step * i) + verticalScreenOffset );
 			}		
 		};
@@ -157,7 +155,12 @@ function(ko,
 		}
 
 		function evaluateWriteResponse(dataKey, response){
-			return new Expectation('Write', 'Good', "Write " + response.message.payload + " -> " + response.status);
+			if(response.status == "200 OK"){
+				return new Expectation('Write', 'Good', "Write " + response.message.payload + " -> " + response.status);
+			}
+			else{
+				return Expectation('Write', 'Bad', "Write " + response.message.payload + " -> " + response.status);
+			}
 		}
 
 		function evaluateReadResponse(dataKey, response){

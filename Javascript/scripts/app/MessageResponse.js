@@ -11,10 +11,10 @@ function(ko,
 		self.payload = payload;
 
 		self.display = {
-			startX: ko.observable(0),
-			startY: ko.observable(0),
-			x: ko.observable(200),
-			y: ko.observable(0),
+			startX: ko.observable(CONST.DEFAULTS.GATEWAY_PORT_X + 50),
+			startY: ko.observable(CONST.DEFAULTS.GATEWAY_PORT_Y),
+			x: ko.observable(CONST.DEFAULTS.GATEWAY_PORT_X),
+			y: ko.observable(CONST.DEFAULTS.GATEWAY_PORT_Y),
 			time: ko.observable(CONST.DEFAULTS.UNDEFINED_DELIVERY_TIME),
 			delivered: function(){}
 		};

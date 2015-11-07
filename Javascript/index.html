@@ -29,42 +29,47 @@
 	-->
 
 	<div class="log">
-		<b>Expectations</b>
+		<span class="log-title">Expectations Log</span><br />
 		<table>
 			<tbody data-bind="foreach: externalResults">
 				<tr>
 					<!--<td data-bind="text: category"></td>-->
-					<td data-bind="text: status"></td>
-					<td data-bind="text: text"></td>
+					<td data-bind="text: status" valign="top"></td>
+					<td data-bind="text: text" valign="top" style="overflow: hidden;"></td>
 				</tr>
 			</tbody>
 		</table>
 	</div>
 
-	<!-- ko foreach: network.nodes -->
-	<div class="node" data-bind="style: { top: display.y() + 'px', left: display.x() + 'px' }, css: { 'node-status-online': status() == 'Online', 'node-status-offline': status() == 'Offline' }">
-		<div class="node-name" data-bind="text: display.description"></div>
-		<div class="node-queue">
-			Action:
-			<!-- ko if: display.incomingValueAction -->
-			<div data-bind="text: display.incomingValueAction" class="node-storage-slot"></div>
-			<!-- /ko -->
-			<div data-bind="ifnot: display.incomingValueAction, visible: display.incomingValueAction() == null" class="node-storage-slot-empty">n/a</div>
+	<div class="network-container">
+		<div class="network-gateway">
+			Network<br/>Gateway
 		</div>
-		<div class="node-storage">
-			Storage:
-			<!-- ko foreach: storage -->
-			<div data-bind="text: display.description" class="node-storage-slot"></div>
-			<!-- /ko -->
-			<div data-bind="if: storage().length == 0, visible: storage().length == 0" class="node-storage-slot-empty">empty</div>
+
+		<!-- ko foreach: network.nodes -->
+		<div class="node" data-bind="style: { top: display.y() + 'px', left: display.x() + 'px' }, css: { 'node-status-online': status() == 'Online', 'node-status-offline': status() == 'Offline' }">
+			<div class="node-name" data-bind="text: display.description"></div>
+			<div class="node-queue">
+				Action:
+				<!-- ko if: display.incomingValueAction -->
+				<div data-bind="text: display.incomingValueAction" class="node-storage-slot"></div>
+				<!-- /ko -->
+				<div data-bind="ifnot: display.incomingValueAction, visible: display.incomingValueAction() == null" class="node-storage-slot-empty">n/a</div>
+			</div>
+			<div class="node-storage">
+				Storage:
+				<!-- ko foreach: storage -->
+				<div data-bind="text: display.description" class="node-storage-slot"></div>
+				<!-- /ko -->
+				<div data-bind="if: storage().length == 0, visible: storage().length == 0" class="node-storage-slot-empty">empty</div>
+			</div>
 		</div>
+		<!-- /ko -->
+
+		<!-- ko foreach: network.messages -->
+			<div data-bind="text: display.description, deliverMessage: $data" class="message" style="position: absolute;"></div>
+		<!-- /ko -->
 	</div>
-	<!-- /ko -->
-
-	<!-- ko foreach: network.messages -->
-		<div data-bind="text: display.description, deliverMessage: $data" class="message" style="position: absolute;"></div>
-	<!-- /ko -->
-
 </div>
 </body>
 <script type="text/javascript">
@@ -101,7 +106,9 @@ function(ko,
 	});
 
 	
-	var vm = new ViewModel(3, sqlAzureSim);
+	var width = $(".network-container").width();
+	var height = $(".network-container").height();
+	var vm = new ViewModel(sqlAzureSim, 3, width, height);
 	ko.applyBindings(vm);
 
 	vm.startExternalMessageGeneration({
