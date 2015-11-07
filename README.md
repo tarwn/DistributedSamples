@@ -43,6 +43,9 @@ https://azure.microsoft.com/en-us/blog/fault-tolerance-in-windows-azure-sql-data
 ** Primary node outages are detected by neighboring systems/monitoring and one of the secondaries is elected Primary
 * All communications comes through a gateway that directs all traffic to the primary
 
+Differences:
+* Transaction log replication - I'm thinking about using epochs to indicate ranges of the transaction log to make this easier to manage without building real transaction logs
+
 Dynamo
 ========
 

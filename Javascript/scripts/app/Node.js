@@ -1,11 +1,13 @@
 define(['knockout',
 		'bluebird',
 		'app/Constants',
+		'app/Message',
 		'app/MessageResponse',
 		'app/StoredData' ],
 function(ko,
 		 Promise,
 		 CONST,
+		 Message,
 		 MessageResponse,
 		 StoredData ){
 
@@ -15,6 +17,7 @@ function(ko,
 		self.status = ko.observable(CONST.NodeStatus.Online);
 		self.specialStatus = ko.observable();
 
+		var outstandingUpdates = [];
 		self.storage = ko.observableArray([]);
 
 		self.display = {
@@ -29,12 +32,78 @@ function(ko,
 				return self.name;
 		});
 
+		self.setOffline = function(){
+			self.status(CONST.NodeStatus.Offline);
+		};
+
+		self.setOnline = function(){
+			if(self.status() != CONST.NodeStatus.Offline)
+				return;
+
+			self.status(CONST.NodeStatus.Restoring);
+			self.display.incomingValueAction('Restoring');
+			self.storage.removeAll();
+
+			// TODO - implement algorithm for finding out neighbors
+			var neighbors = network.getMyNeighbors(self);
+
+			// ask for a restore
+			var restoreMessage = new Message(simulationSettings, 'I-' + self.name, CONST.MessageTypes.Internal, 'RestoreImage');
+			restoreMessage.display.startX(self.display.x());
+			restoreMessage.display.startY(self.display.y());
+			var restoreRequests = neighbors.map(function(neighbor){
+				return network.deliverMessage(restoreMessage, neighbor);
+			});
+
+			// apply latest restore
+			Promise.all(restoreRequests).then(function(responses){
+				var latestRestore = null;
+				responses.forEach(function(response){
+					if(response.statusCode != 200)
+						return;
+
+					if(latestRestore == null || response.payload.latestUpdate > latestRestore.latestUpdate)
+						latestRestore = response.payload;
+				});
+
+				// apply
+				if(latestRestore != null){
+					latestRestore.updatesLog.forEach(function(storedItem){
+						self.storeData(storedItem);
+					});
+				}
+
+				// apply outstanding updates while restore was occurring
+				outstandingUpdates.forEach(function(storedItem){
+					self.storeData(storedItem);
+				});
+				outstandingUpdates = [];
+
+				self.display.incomingValueAction(null);
+				self.status(CONST.NodeStatus.Online);
+			});
+		};
+
+		function getRestoringResponse(message){
+			return new MessageResponse(simulationSettings, message, 204, "Restoring");
+		}
+
 		self.processNewMessage = function(message){
 			switch(message.type){
 				case CONST.MessageTypes.Write:
-					return performWrite(message);
+					if(self.status() == CONST.NodeStatus.Restoring){
+						return performDelayedWrite(message);
+					}
+					else{
+						return performWrite(message);
+					}
 				case CONST.MessageTypes.Read:
 					return performRead(message);
+				case CONST.MessageTypes.Internal:
+					if(message.payload == 'RestoreImage')
+						return performRestoreImageResponse(message);
+					else
+						return performError(message);
 				default:
 					return performError(message);
 			}
@@ -82,6 +151,14 @@ function(ko,
 			});
 		}
 
+		function performDelayedWrite(message){
+			return new Promise(function(resolve){
+				var dataToStore = self.parseData(message.payload);
+				outstandingUpdates.push(dataToStore);
+				resolve(getRestoringResponse(message));
+			});
+		}
+
 		function performRead(message){
 			return new Promise(function(resolve){
 				var storedData = self.getFromStorage(message.payload);
@@ -92,6 +169,21 @@ function(ko,
 				else{
 					self.display.incomingValueAction(message.type + ' ' + message.payload + ': 200 OK');
 					resolve(new MessageResponse(simulationSettings, message, 200, "OK", storedData.value()));
+				}
+			});
+		}
+
+		function performRestoreImageResponse(message){
+			return new Promise(function(resolve){
+				if(self.status() == CONST.NodeStatus.Online){
+					var relevantData = self.storage().filter(function(storedItem){
+						return true;	// later we will filter based on transaction id
+					});
+					var restore = new RestoreLog(1, relevantData);
+					resolve(new MessageResponse(simulationSettings, message, 200, "OK", restore));
+				}
+				else{
+					resolve(new MessageResponse(simulationSettings, message, 409, "I'm Restoring"));
 				}
 			});
 		}
@@ -135,6 +227,11 @@ function(ko,
 			else
 				return null;
 		}
+	}
+
+	function RestoreLog(latestUpdate, updatesLog){
+		this.latestUpdate = latestUpdate;
+		this.updatesLog = updatesLog;
 	}
 
 	return Node;

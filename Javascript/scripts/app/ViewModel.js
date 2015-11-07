@@ -252,9 +252,9 @@ function(ko,
 			var targetNode = self.network.selectRandomOnlineNode();
 			var onlineTime = Math.random() * simulationSettings.maximumOfflineNodeRepairTime;
 
-			targetNode.status(CONST.NodeStatus.Offline);
+			targetNode.setOffline();
 			setTimeout(function(){	
-				targetNode.status(CONST.NodeStatus.Online);		
+				targetNode.setOnline();		
 				self.logExternalResults(new Expectation('Network', CONST.NodeStatus.Online, targetNode.name + " is online"));
 			}, onlineTime);
 

@@ -9,7 +9,8 @@ return {
 	},
 	MessageTypes: {
 		'Write':	'Write',
-		'Read':		'Read'
+		'Read':		'Read',
+		'Internal':	'Internal'
 	},
 	NetworkCommunications: {
 		'Any': 'Any',
@@ -22,6 +23,7 @@ return {
 	},
 	NodeStatus: {
 		'Online': 'Online',
+		'Restoring': 'Restoring',
 		'Offline': 'Offline'
 	}
 }

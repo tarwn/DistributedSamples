@@ -143,7 +143,7 @@ function(ko,
 			.delay(simulationSettings.messageAtNodeDelay)
 			.then(function(){
 				self.messages.remove(message);
-				if(node.status() == CONST.NodeStatus.Online){
+				if(node.status() != CONST.NodeStatus.Offline){
 					return node.processNewMessage(message);
 				}
 				else{
