@@ -91,16 +91,24 @@ body{
 }
 
 .message{
+	position: absolute;
 	padding: .5em;
 	border: 1px solid #AAAAAA;
 	background-color: #dddddd;
 	text-align: center;
+	z-index: 2;
 }
 .message.message-goodnews{
 	background-color: #ddffdd;
 }
 .message.message-badnews{
 	background-color: #ffdddd;
+}
+.message.message-internal{
+	border-style: double;
+	background-color: #ddddaa;
+	border-width: 3px;
+	z-index: 1;
 }
 
 .log{

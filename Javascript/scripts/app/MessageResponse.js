@@ -6,6 +6,8 @@ function(ko,
 	function MessageResponse(simulationSettings, message, statusCode, statusMessage, payload){
 		var self = this;
 
+		self.type = message.type;
+
 		self.message = message;
 		self.statusCode = statusCode;
 		self.statusMessage = statusMessage;
