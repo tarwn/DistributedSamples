@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <title></title>
+
+	<link rel="stylesheet" href="content/stylesheet.css" />
+
+    <script src="scripts/lib/require-2.1.20.min.js"></script>
+    <script src="scripts/main.js"></script>
+</head>
+<body>
+
+<div class="" style="text-align: center;">
+	<span data-bind="text: display.description">Initializing...</span><br/>
+	<input type="button" value="initializing..." data-bind="visible: isInitialized, value: pauseLabel, click: togglePause" style="display: none" />
+	<input type="button" value="initializing..." data-bind="visible: isInitialized, value: monkeyLabel, click: toggleMonkey"  style="display: none"/>
+	<input type="button" value="add node" data-bind="visible: isInitialized, click: addNode"  style="display: none"/>
+</div>
+
+<div class="container">
+
+	<!--
+	<div class="log right">
+		<b>Message Log</b>
+		<!-- ko foreach: logContents -- >
+		<div data-bind="text: $data"></div>
+		<!-- /ko -- >
+	</div>
+	-->
+
+	<div class="log">
+		<span class="log-title">SLA Actual</span><br />
+		<br/>
+		<table class="log-table">
+			<tr class="log-table-stats-head">
+				<td>Reads</td>
+				<td>Total</td>
+				<td>Good</td>
+				<td>Stale</td>
+				<td>Wrong</td>
+				<td>Bad 404</td>
+				<td>Error</td>
+			</tr>
+			<tr class="log-table-stats">
+				<td data-bind="text: expectations.reads.goodPercent">0</td>
+				<td data-bind="text: expectations.reads.totalCount">0</td>
+				<td data-bind="text: expectations.reads.goodCount">0</td>
+				<td data-bind="text: expectations.reads.staleCount">0</td>
+				<td data-bind="text: expectations.reads.invalidCount">0</td>
+				<td data-bind="text: expectations.reads.badCount">0</td>
+				<td data-bind="text: expectations.reads.errorCount">0</td>
+			</tr>
+			<tr><td colspan="6"></td></tr>
+			<tr class="log-table-stats-head">
+				<td>Writes</td>
+				<td>Total</td>
+				<td>Good</td>
+				<td>Error</td>
+			</tr>
+			<tr class="log-table-stats">
+				<td data-bind="text: expectations.writes.goodPercent">0</td>
+				<td data-bind="text: expectations.writes.totalCount">0</td>
+				<td data-bind="text: expectations.writes.goodCount">0</td>
+				<td data-bind="text: expectations.writes.errorCount">0</td>
+			</tr>
+			<tr><td colspan="6"></td></tr>
+			<tr class="log-table-stats-head">
+				<td>Outages</td>
+				<td>Total</td>
+			</tr>
+			<tr class="log-table-stats">
+				<td></td>
+				<td data-bind="text: expectations.outages.outageCount">0</td>
+			</tr>
+		</table>
+		
+		<br/>
+
+		<span class="log-title">Expectations Log</span><br />
+		<table>
+			<tbody data-bind="foreach: externalResults">
+				<tr>
+					<!--<td data-bind="text: category"></td>-->
+					<td data-bind="text: status" valign="top"></td>
+					<td data-bind="text: text" valign="top" style="overflow: hidden;"></td>
+				</tr>
+			</tbody>
+		</table>
+	</div>
+
+	<div class="network-container">
+		<div class="network-gateway">
+			Network<br/>Gateway<br/>
+			<span class="network-monitor" data-bind="text: network.monitoringCountDown, css: { 'network-monitor-active': network.isMonitoring }"></span>
+		</div>
+
+		<div data-bind="visible: isInitialized" style="display: none">
+
+			<!-- ko foreach: network.nodes -->
+				<div class="node" data-bind="style: { top: display.y() + 'px', left: display.x() + 'px' }, css: { 'node-status-online': status() == 'Online', 'node-status-offline': status() == 'Offline' }">
+					<span class="remove-node" data-bind="click: $root.removeNode">X</span>
+					<div class="node-name" data-bind="text: display.description"></div>
+					<div class="node-queue">
+						Action:
+						<!-- ko if: display.incomingValueAction -->
+						<div data-bind="text: display.incomingValueAction" class="node-storage-slot"></div>
+						<!-- /ko -->
+						<div data-bind="ifnot: display.incomingValueAction, visible: display.incomingValueAction() == null" class="node-storage-slot-empty">n/a</div>
+					</div>
+					<div class="node-storage">
+						Storage:
+						<!-- ko foreach: storage -->
+						<div data-bind="text: display.description" class="node-storage-slot"></div>
+						<!-- /ko -->
+						<div data-bind="if: storage().length == 0, visible: storage().length == 0" class="node-storage-slot-empty">empty</div>
+					</div>
+				</div>
+			<!-- /ko -->
+
+			<!-- ko foreach: network.messages -->
+				<div data-bind="text: display.description, deliverMessage: $data, css: { 'message-goodnews': display.isGood, 'message-badnews': !display.isGood(), 'message-internal': type == 'Internal' }" class="message"></div>
+			<!-- /ko -->
+		</div>
+	</div>
+</div>
+</body>
+<script type="text/javascript">
+
+require(["knockout",
+		 "app/Constants",
+		 "app/ViewModel",
+		 "app/azureSql/Settings",
+		 "app/azureSql/Network",
+		 "app/azureSql/Node"],
+function(ko,
+		 CONST,
+		 ViewModel,
+		 AzureSettings,
+		 AzureNetwork,
+		 AzureNode){
+	
+	var settings = new AzureSettings({
+		// simulation settings
+		messageDeliveryTime:	750,
+		messageDeliveryJitter:	400,
+		messageAtNodeDelay:		0,
+
+		// network settings
+		networkElectionStyle:	CONST.NetworkElectionStyle.Polled,
+		
+		// node settings
+		writeQuorum:			2,
+		readQuorum:				1,
+		
+		// network operations + monitoring
+		networkMonitoringTime:	10000,
+		timeUntilOfflineNodeIsRemoved: -1,	// never remove bad nodes
+		
+		// monkey settings
+		maximumOfflineNodeRepairTime:	10000,
+		minimumTimeBetweenOutages:		30000
+	});
+	
+	var width = $(".network-container").width();
+	var height = $(".network-container").height();
+	var vm = new ViewModel(settings, 3, width, height, AzureNetwork, AzureNode);
+	ko.applyBindings(vm);
+
+	vm.startExternalMessageGeneration({
+		"D0": [],
+		"D1": [],
+		"D2": [],
+		"D3": [],
+		"D4": []
+	});
+});
+
+</script>
+</html>

@@ -3,19 +3,15 @@ define(['knockout',
 		'bluebird',
 		'app/Constants',
 		'app/Expectation',
-		'app/Message',
-		'app/Network',
-		'app/Node'],
+		'app/Message'],
 function(ko, 
 		 $,
 		 Promise,
 		 CONST,
 		 Expectation,
-		 Message,
-		 Network,
-		 Node ){
+		 Message ){
 
-	function ViewModel(simulationSettings, numberOfStartingNodes, width, height){
+	function ViewModel(simulationSettings, numberOfStartingNodes, width, height, Network, Node){
 		var self = this;
 		
 		self.logContents = ko.observableArray([]);

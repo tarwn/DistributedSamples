@@ -129,28 +129,32 @@
 
 require(["knockout",
 		 "app/Constants",
-		 "app/Settings",
-		 "app/ViewModel" ],
+		 "app/ViewModel",
+		 "app/alternate/Settings",
+		 "app/alternate/Network",
+		 "app/alternate/Node"],
 function(ko,
 		 CONST,
-		 Settings,
-		 ViewModel ){
+		 ViewModel,
+		 AltSettings,
+		 AltNetwork,
+		 AltNode){
 	
-	var sqlAzureSim = new Settings({
+	var settings = new AltSettings({
 		// simulation settings
 		messageDeliveryTime:	750,
 		messageDeliveryJitter:	400,
 		messageAtNodeDelay:		0,
 
 		// network settings
-		networkCommunications:	CONST.NetworkCommunications.GatewaySendsToPrimary,
-		networkElectionStyle:	CONST.NetworkElectionStyle.Polled,
+		networkCommunications:	CONST.NetworkCommunications.Any,
+		networkElectionStyle:	CONST.NetworkElectionStyle.Immediate,
 		
 		// node settings
 		nodeElectionStyle:		null,
 		nodeAdditionStyle:		null,
 		replicateWrites:		true,
-		writeQuorum:			2,
+		writeQuorum:			3,
 		readQuorum:				1,
 		
 		// network operations + monitoring
@@ -161,11 +165,10 @@ function(ko,
 		maximumOfflineNodeRepairTime:	10000,
 		minimumTimeBetweenOutages:		30000
 	});
-
 	
 	var width = $(".network-container").width();
 	var height = $(".network-container").height();
-	var vm = new ViewModel(sqlAzureSim, 3, width, height);
+	var vm = new ViewModel(settings, 4, width, height, AltNetwork, AltNode);
 	ko.applyBindings(vm);
 
 	vm.startExternalMessageGeneration({
