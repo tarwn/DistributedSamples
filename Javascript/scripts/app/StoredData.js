@@ -13,6 +13,10 @@ function(ko){
 		};
 	}
 
+	StoredData.prototype.toString = function(){
+		return this.key + ":" + this.value();
+	};
+
 	return StoredData;
 
 });

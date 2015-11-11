@@ -19,6 +19,7 @@ function(ko,
 		// node settings
 		self.writeQuorum = rawValues.writeQuorum;
 		self.readQuorum = rawValues.readQuorum;
+		self.recoveryTransactionLogLength = rawValues.recoveryTransactionLogLength;
 
 		// network operations + monitoring
 		self.networkMonitoringTime = ko.computed(function(){ return self.timeMultiplier() * rawValues.networkMonitoringTime; });

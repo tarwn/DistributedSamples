@@ -100,23 +100,53 @@
 		<div data-bind="visible: isInitialized" style="display: none">
 
 			<!-- ko foreach: network.nodes -->
-				<div class="node" data-bind="style: { top: display.y() + 'px', left: display.x() + 'px' }, css: { 'node-status-online': status() == 'Online', 'node-status-offline': status() == 'Offline' }">
+				<div class="node" data-bind="style: { top: display.y() + 'px', left: display.x() + 'px' }, css: { 'node-status-online': status() == 'Online', 'node-status-offline': status() == 'Offline' }" style="width: 250px;">
 					<span class="remove-node" data-bind="click: $root.removeNode">X</span>
 					<div class="node-name" data-bind="text: display.description"></div>
 					<div class="node-queue">
 						Action:
 						<!-- ko if: display.incomingValueAction -->
-						<div data-bind="text: display.incomingValueAction" class="node-storage-slot"></div>
+						<div data-bind="text: display.incomingValueAction" class="node-action"></div>
 						<!-- /ko -->
-						<div data-bind="ifnot: display.incomingValueAction, visible: display.incomingValueAction() == null" class="node-storage-slot-empty">n/a</div>
+						<div data-bind="ifnot: display.incomingValueAction, visible: display.incomingValueAction() == null" class="node-action-empty">n/a</div>
 					</div>
-					<div class="node-storage">
+					<div class="node-storage" style="float: left; width:  40%">
 						Storage:
-						<!-- ko foreach: storage -->
-						<div data-bind="text: display.description" class="node-storage-slot"></div>
+						<!-- ko if: storage != null && storage().length > 0 -->
+						<table class="node-storage-list">
+							<tbody data-bind="foreach: storage">
+								<tr>
+									<td data-bind="text: key"></td>
+									<td data-bind="text: value"></td>
+								</tr>
+							</tbody>
+						</table>
 						<!-- /ko -->
 						<div data-bind="if: storage().length == 0, visible: storage().length == 0" class="node-storage-slot-empty">empty</div>
 					</div>
+					<div class="node-storage" style="float: right; width: 40%">
+						Trans Log:
+						<!-- ko if: transactionLog().length > 0 || outstandingTransactions().length > 0 -->
+						<table class="node-transaction-list">
+							<tbody>
+								<!-- ko foreach: transactionLog -->
+								<tr class="complete-transaction">
+									<td data-bind="text: csn"></td>
+									<td data-bind="text: data"></td>
+								</tr>
+								<!-- /ko -->
+								<!-- ko foreach: outstandingTransactions -->
+								<tr class="incomplete-transaction">
+									<td data-bind="text: csn"></td>
+									<td data-bind="text: data"></td>
+								</tr>
+								<!-- /ko -->
+							</tbody>
+						</table>
+						<!-- /ko -->
+						<div data-bind="visible: transactionLog().length == 0 && outstandingTransactions().length == 0" class="node-storage-slot-empty">empty</div>
+					</div>
+					<br style="clear: both" />
 				</div>
 			<!-- /ko -->
 
@@ -154,6 +184,7 @@ function(ko,
 		// node settings
 		writeQuorum:			2,
 		readQuorum:				1,
+		recoveryTransactionLogLength: 4,
 		
 		// network operations + monitoring
 		networkMonitoringTime:	10000,

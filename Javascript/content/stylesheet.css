@@ -94,15 +94,32 @@ body{
 .node-storage{
 	margin: .5em;
 }
-.node-storage-slot{
+.node-storage-list,
+.node-transaction-list{
+	width: 100%;	
+	border-collapse: collapse;
+}
+
+.node-action,
+.node-storage-list tr,
+.node-transaction-list tr{
 	border: 1px solid #666666;
+}
+.node-storage-list td,
+.node-transaction-list td{
 	padding: 1px 4px;
 }
+
+.node-action-empty,
 .node-storage-slot-empty{
 	border: 1px solid #666666;
 	font-style: italic;
 	color: #bbbbbb;
 	text-align: center;
+}
+
+.incomplete-transaction{
+	background-color: #ffffcc;
 }
 
 .message{
@@ -123,8 +140,8 @@ body{
 	background-color: #ddddaa;
 	z-index: 1;
 }
-.message.message-internalmessage-badnews{
-	background-color: #ddcccc;
+.message.message-internal.message-badnews{
+	background-color: #eecccc;
 	z-index: 1;
 }
 

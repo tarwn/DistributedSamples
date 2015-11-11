@@ -1,5 +1,8 @@
 define(['knockout',
 		'bluebird',
+		'app/azureSql/Constants',
+		'app/azureSql/InternalMessage',
+		'app/azureSql/Transaction',
 		'app/Constants',
 		'app/Message',
 		'app/MessageResponse',
@@ -7,6 +10,9 @@ define(['knockout',
 		'app/StoredData' ],
 function(ko,
 		 Promise,
+		 AZURECONST,
+		 InternalMessage,
+		 Transaction,
 		 CONST,
 		 Message,
 		 MessageResponse,
@@ -18,10 +24,13 @@ function(ko,
 
 		var self = this;
 
-		var outstandingUpdates = [];
+		var latestCSN = null;
+		self.outstandingTransactions = ko.observableArray([]);
+		self.transactionLog = ko.observableArray([]);
 
 		self.setOffline = function(){
 			self.status(CONST.NodeStatus.Offline);
+			self.outstandingTransactions.removeAll();
 		};
 
 		self.setOnline = function(){
@@ -30,44 +39,55 @@ function(ko,
 
 			self.status(CONST.NodeStatus.Restoring);
 			self.display.incomingValueAction('Restoring');
-			self.storage.removeAll();
+			self.outstandingTransactions.removeAll();
 
 			// TODO - implement algorithm for finding out neighbors
 			var neighbors = network.getMyNeighbors(self);
 
-			// ask for a restore
-			var restoreMessage = new Message(simulationSettings, 'I-' + self.name, CONST.MessageTypes.Internal, 'RestorePlease');
-			restoreMessage.display.startX(self.display.x());
-			restoreMessage.display.startY(self.display.y());
+			// ask for a log restore
 			var restoreRequests = neighbors.map(function(neighbor){
+				var restoreMessage = generateRestoreMessage();
 				return network.deliverMessage(restoreMessage, neighbor);
 			});
 
-			// apply latest restore
 			Promise.all(restoreRequests).then(function(responses){
 				var latestRestore = null;
+
+				// identify latest response (csn)
 				responses.forEach(function(response){
 					if(response.statusCode != 200)
 						return;
 
-					if(latestRestore == null || response.payload.latestUpdate > latestRestore.latestUpdate)
+					if(latestRestore == null || response.payload.csn > latestRestore.csn){
 						latestRestore = response.payload;
+					}
 				});
 
-				// apply
-				if(latestRestore != null){
-					latestRestore.updatesLog.forEach(function(storedItem){
-						self.storeData(storedItem);
+				if(latestRestore != null && latestRestore.canApplyTransactions){
+					// apply provided log restore
+					return new Promise(function(resolve){
+						latestRestore.updatesLog.forEach(function(transaction){
+							beginTransaction(transaction);
+							commitTransaction(transaction);
+						});
+						self.display.incomingValueAction('Restored ' + latestRestore.updatesLog.length + ' trans');
+						resolve();
 					});
 				}
-
+				else{
+					// request and apply full backup instead
+					return performFullBackup().then(function(){
+						self.display.incomingValueAction('Restored full backup');					
+					});
+				}
+				return latestRestore;
+			}).then(function(){
 				// apply outstanding updates while restore was occurring
-				outstandingUpdates.forEach(function(storedItem){
-					self.storeData(storedItem);
-				});
-				outstandingUpdates = [];
+				while(self.outstandingTransactions().length > 0){
+					var transaction = self.outstandingTransactions.shift();
+					commitTransaction(transaction);
+				}
 
-				self.display.incomingValueAction(null);
 				self.status(CONST.NodeStatus.Online);
 			});
 		};
@@ -76,42 +96,100 @@ function(ko,
 			return new MessageResponse(simulationSettings, message, 204, "Restoring");
 		}
 
-		self.processNewMessage = function(message){
-			switch(message.type){
-				case CONST.MessageTypes.Write:
-					if(self.status() == CONST.NodeStatus.Restoring){
-						return performDelayedWrite(message);
-					}
-					else{
-						return performWrite(message);
-					}
-				case CONST.MessageTypes.Read:
-					return performRead(message);
-				case CONST.MessageTypes.Internal:
-					if(message.payload == 'RestorePlease')
-						return performRestoreImageResponse(message);
+		function performFullBackup(){
+			// TODO - implement algorithm for finding out neighbors
+			var neighbors = network.getMyNeighbors(self);
+
+			// need to find a way to only ask one server for full restore
+			var fullRestoreRequests = neighbors.map(function(neighbor){
+				var fullRestoreMessage = generateFullRestoreMessage();
+				return network.deliverMessage(fullRestoreMessage, neighbor).then(function(response){
+					if(response.statusCode < 200 || response.statusCode >= 300)
+						throw new Error("Cannot restore: " + response.statusCode + ' ' + response.statusMessage);
 					else
+						return response;
+				});
+			});
+
+			return Promise.any(fullRestoreRequests).then(function(response){
+				self.storage.removeAll();
+				console.log(response);
+				var backup = response.payload.backup;
+				// apply
+				if(backup != null){
+					backup.forEach(function(storedItem){
+						self.storeData(storedItem);
+					});
+				}
+				latestCSN = response.payload.csn;
+			}).catch(Promise.AggregateError, function(err) {
+				self.display.incomingValueAction('No restores, start dirty');
+			});
+		}
+
+		self.processNewMessage = function(message){
+			try{
+				var messageType = message.type;
+				if(messageType == CONST.MessageTypes.Internal)
+					messageType = message.internalType;
+
+				switch(messageType){
+					case CONST.MessageTypes.Write:
+						if(self.status() == CONST.NodeStatus.Online){
+							return performWrite(message);
+						}
+					case CONST.MessageTypes.Read:
+						return performRead(message);
+					case AZURECONST.InternalMessageTypes.Replicate:
+						if(self.status() == CONST.NodeStatus.Online){
+							return performRedoWrite(message, message.payload);
+						}
+						else if(self.status() == CONST.NodeStatus.Restoring){
+							return performDelayedRedoWrite(message, message.payload);
+						}
+					case AZURECONST.InternalMessageTypes.RestorePlease:
+						return performRestoreResponse(message);
+					case AZURECONST.InternalMessageTypes.FullRestorePlease:
+						return performFullRestoreResponse(message);
+					default:
 						return performError(message);
-				default:
-					return performError(message);
+				}
+			}
+			catch(e){
+				return performError(message);
 			}
 		};
+
+		function generateNextCSN(message){
+			// we're going to keep this simple, how the CSN is generated doesn't have
+			//	much relevant on this simulaton. I may come back later and replace it 
+			//	with a combination of epochs and local counter values
+			var messageId = message.name;
+			var CSN = message.name.replace('M','');
+			return CSN;
+		}
 
 		function performWrite(message){
 			return new Promise(function(resolve){
 				self.display.incomingValueAction(message.type + ' ' + message.payload);
 
+				var csn = generateNextCSN(message);
 				var dataToStore = self.parseData(message.payload);
+				var outstandingTransaction = new Transaction(csn, dataToStore);
+				beginTransaction(outstandingTransaction);
 
 				if((simulationSettings.replicateWrites || simulationSettings.writeQuorum > 1) && !message.isForQuorum){
 					self.display.incomingValueAction(message.type + ' ' + dataToStore.key + ': pending...');
 
 					// TODO - implement algorithm for finding out neighbors
 					var neighbors = network.getMyNeighbors(self);
-					var quorumWrites = neighbors.map(function(neighbor){
-						var quorumWriteMessage = message.cloneForQuorumOperation(123);	// add a transaction number later
-						return network.deliverMessage(quorumWriteMessage, neighbor).then(function(response){
+
+					// replicate writes as oustanding transaction
+					var replicationWrites = neighbors.map(function(neighbor){
+						var replicationWriteMessage = generateRedoWriteMessage(outstandingTransaction);
+						return network.deliverMessage(replicationWriteMessage, neighbor).then(function(response){
 							// treat bad responses as errors so they won't be considered as part of the fulfilled count for quorum
+							// theoretically we could receive an ABORT at this point too, but I haven't been able to find an explanation for this
 							if(response.statusCode != 200){
 								throw new Error("Bad response");
 							}
@@ -121,30 +199,63 @@ function(ko,
 						});
 					});
 
-					Promise.some(quorumWrites, simulationSettings.writeQuorum - 1).then(function(responses){
-						// commit the write and return
-						self.storeData(dataToStore);
+					// after a quorum of acks, commit the data and send out the commits
+					Promise.some(replicationWrites, simulationSettings.writeQuorum - 1).then(function(responses){
+						// commit the write, clear the outstanding transaction, update current status
+						commitTransaction(outstandingTransaction);
 						self.display.incomingValueAction(message.type + ' ' + dataToStore.key + ': 200 OK');
 						resolve(new MessageResponse(simulationSettings, message, 200, "OK"));
 					}).catch(Promise.AggregateError, function(err) {
+						abortTransaction(outstandingTransaction);
 						self.display.incomingValueAction(message.type + ' ' + dataToStore.key + ': 507 ERR');
-						resolve(new MessageResponse(simulationSettings, message, 507, "Write Quorum Not Reached"));
+						resolve(new MessageResponse(simulationSettings, message, 507, "ABORT Write Quorum Not Reached"));
 					});
 				}
 				else{
-					self.display.incomingValueAction(message.type + ' ' + dataToStore.key + ': 200 OK');
-					self.storeData(dataToStore);
+					commitTransaction(outstandingTransaction);
+					self.display.incomingValueAction(message.type + ' ' + outstandingTransaction.data.key + ': 200 OK');
 					resolve(new MessageResponse(simulationSettings, message, 200, "OK"));
 				}
 			});
 		}
 
-		function performDelayedWrite(message){
+		function performRedoWrite(message, transaction){
+			// todo: refactor this and above method for common logic
 			return new Promise(function(resolve){
-				var dataToStore = self.parseData(message.payload);
-				outstandingUpdates.push(dataToStore);
+				beginTransaction(transaction);
+				commitTransaction(transaction);
+				self.display.incomingValueAction(message.internalType + ' ' + transaction.data.key + ': 200 OK');
+				resolve(new MessageResponse(simulationSettings, message, 200, "OK"));
+			});
+		}
+
+		function performDelayedRedoWrite(message, transaction){
+			return new Promise(function(resolve){
+				beginTransaction(transaction);
 				resolve(getRestoringResponse(message));
 			});
+		}
+
+		function beginTransaction(transaction){
+			self.outstandingTransactions.push(transaction);
+		}
+
+		function commitTransaction(transaction){
+			self.storeData(transaction.data);
+			self.outstandingTransactions.remove(transaction);
+			self.transactionLog.push(transaction);
+			truncateTransactionLogIfNecessary();
+			latestCSN = transaction.csn;
+		}
+
+		function abortTransaction(transaction){
+			self.outstandingTransactions.remove(transaction);
+		}
+
+		function truncateTransactionLogIfNecessary(){
+			while(self.transactionLog().length > simulationSettings.recoveryTransactionLogLength){
+				self.transactionLog.shift();
+			}
 		}
 
 		function performRead(message){
@@ -161,18 +272,61 @@ function(ko,
 			});
 		}
 
-		function performRestoreImageResponse(message){
+		function generateRestoreMessage(){
+			var message = new InternalMessage(simulationSettings, self.name, AZURECONST.InternalMessageTypes.RestorePlease, latestCSN);
+			message.display.startX(self.display.x());
+			message.display.startY(self.display.y());
+			return message;
+		}
+
+		function generateFullRestoreMessage(){
+			var message = new InternalMessage(simulationSettings, self.name, AZURECONST.InternalMessageTypes.FullRestorePlease, latestCSN);
+			message.display.startX(self.display.x());
+			message.display.startY(self.display.y());
+			return message;
+		}
+
+		function generateRedoWriteMessage(transaction){
+			var message = new InternalMessage(simulationSettings, self.name, AZURECONST.InternalMessageTypes.Replicate, transaction);
+			message.display.startX(self.display.x());
+			message.display.startY(self.display.y());
+			return message;
+		}
+
+		function performRestoreResponse(message){
+			var targetCSN = message.payload;
+
 			return new Promise(function(resolve){
-				if(self.status() == CONST.NodeStatus.Online){
-					var relevantData = self.storage().filter(function(storedItem){
-						return true;	// later we will filter based on transaction id
-					});
-					var restore = new RestoreLog(1, relevantData);
-					resolve(new MessageResponse(simulationSettings, message, 200, "OK", restore));
+				if(self.status() == CONST.NodeStatus.Restoring){
+					resolve(new MessageResponse(simulationSettings, message, 409, "I'm Restoring"));
+					return;
+				}
+				
+				var transactions = self.transactionLog().filter(function(transaction){
+					return transaction.csn >= targetCSN;
+				});
+
+				console.log(transactions);
+
+				if(transactions.length > 0 && transactions[0].csn == targetCSN){
+					var latestCSN = transactions[transactions.length - 1].csn;
+					transactions.shift();	// remove the matching transaction
+					resolve(new MessageResponse(simulationSettings, message, 200, "OK", new RestoreLog(latestCSN, true, transactions)));
 				}
 				else{
+					resolve(new MessageResponse(simulationSettings, message, 204, "Not Enough Log", new RestoreLog(targetCSN, false, null)));
+				}				
+			});
+		}
+
+		function performFullRestoreResponse(message){
+			return new Promise(function(resolve){
+				if(self.status() == CONST.NodeStatus.Restoring){
 					resolve(new MessageResponse(simulationSettings, message, 409, "I'm Restoring"));
+					return;
 				}
+				
+				resolve(new MessageResponse(simulationSettings, message, 200, "OK", new RestoreFull(latestCSN, self.storage())));
 			});
 		}
 
@@ -184,13 +338,23 @@ function(ko,
 		}
 	}
 
-	function RestoreLog(latestUpdate, updatesLog){
-		this.latestUpdate = latestUpdate;
-		this.updatesLog = updatesLog;
+	function RestoreLog(csn, canApplyTransactions, updatesLog){
+		this.csn = csn;
+		this.canApplyTransactions = canApplyTransactions;
+		this.updatesLog = updatesLog || [];
 	}
 
 	RestoreLog.prototype.toString = function(){
-		return "(Restore from " + this.latestUpdate + ")";
+		return "(LogRestore to " + this.csn + ", " + this.updatesLog.length + " trans)";
+	};
+
+	function RestoreFull(csn, backup){
+		this.csn = csn;
+		this.backup = backup;
+	}
+
+	RestoreFull.prototype.toString = function(){
+		return "(FullRestore to " + this.csn + ")";
 	};
 
 	Node.prototype = Object.create(NodeBase.prototype);
