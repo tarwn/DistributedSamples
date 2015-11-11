@@ -36,7 +36,7 @@ function(ko,
 			var neighbors = network.getMyNeighbors(self);
 
 			// ask for a restore
-			var restoreMessage = new Message(simulationSettings, 'I-' + self.name, CONST.MessageTypes.Internal, 'RestoreImage');
+			var restoreMessage = new Message(simulationSettings, 'I-' + self.name, CONST.MessageTypes.Internal, 'RestorePlease');
 			restoreMessage.display.startX(self.display.x());
 			restoreMessage.display.startY(self.display.y());
 			var restoreRequests = neighbors.map(function(neighbor){
@@ -88,7 +88,7 @@ function(ko,
 				case CONST.MessageTypes.Read:
 					return performRead(message);
 				case CONST.MessageTypes.Internal:
-					if(message.payload == 'RestoreImage')
+					if(message.payload == 'RestorePlease')
 						return performRestoreImageResponse(message);
 					else
 						return performError(message);
@@ -188,6 +188,10 @@ function(ko,
 		this.latestUpdate = latestUpdate;
 		this.updatesLog = updatesLog;
 	}
+
+	RestoreLog.prototype.toString = function(){
+		return "(Restore from " + this.latestUpdate + ")";
+	};
 
 	Node.prototype = Object.create(NodeBase.prototype);
 

@@ -21,15 +21,17 @@ function(ko,
 		};
 		self.display.description = ko.computed(function(){
 			if(self.type == CONST.MessageTypes.Write)
-				return self.name + ' (' + self.type[0] + ' ' + payload + ')';
+				return "[" + self.name + '] ' + self.type + ' ' + payload;
 			else if(self.type == CONST.MessageTypes.Read)
-				return self.name + ' (' + self.type[0] + ' ' + payload + ')';
+				return "[" + self.name + '] ' + self.type + ' ' + payload;
+			else if(self.type == CONST.MessageTypes.Internal)
+				return "[" + self.name + '] ' + self.type + ' ' + payload;
 			else
-				return self.name + ' (' + self.type[0] + ')';
+				return "[" + self.name + '] ' + self.type;
 		});
 
 		self.cloneForQuorumOperation = function(){
-			var clone = new Message(simulationSettings, 'Q' + name, messageType, payload);
+			var clone = new Message(simulationSettings, 'Q-' + name, messageType, payload);
 			clone.isForQuorum = true;
 			clone.display.startX(self.display.x());
 			clone.display.startY(self.display.y());

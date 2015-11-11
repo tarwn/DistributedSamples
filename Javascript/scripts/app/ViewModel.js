@@ -44,7 +44,7 @@ function(ko,
 			description: ko.computed(function(){
 				return self.network.onlineNodes().length + 
 						" of " + self.network.nodes().length + " nodes online, " +
-						simulationSettings.display.description;
+						simulationSettings.display.description();
 			})
 		};
 
@@ -138,6 +138,15 @@ function(ko,
 			if(self.isPaused() == false && self.isRunning() == false){
 				generateMessage();
 			}
+		};
+
+		self.speedFast = function(){
+			if(simulationSettings.timeMultiplier() > 1){
+				simulationSettings.timeMultiplier(1);
+			}
+		};
+		self.speedSlow = function(){
+				simulationSettings.timeMultiplier(4);
 		};
 
 		self.isMonkeyActive = ko.observable(false);
@@ -308,7 +317,7 @@ function(ko,
 			self.isMonkeyRunning(true);
 
 			var targetNode = self.network.selectRandomOnlineNode();
-			var onlineTime = Math.random() * simulationSettings.maximumOfflineNodeRepairTime;
+			var onlineTime = Math.random() * simulationSettings.maximumOfflineNodeRepairTime();
 
 			targetNode.setOffline();
 			setTimeout(function(){	
@@ -319,7 +328,7 @@ function(ko,
 			self.logExternalResults(new Expectation('Network', CONST.NodeStatus.Offline, targetNode.name + " is offline"));
 
 			self.isMonkeyRunning(false);
-			setTimeout(startTheMonkey, Math.random() * simulationSettings.minimumTimeBetweenOutages);
+			setTimeout(startTheMonkey, Math.random() * simulationSettings.minimumTimeBetweenOutages());
 		}
 
 		self.initialize();

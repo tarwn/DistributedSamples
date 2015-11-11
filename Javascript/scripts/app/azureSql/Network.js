@@ -16,9 +16,11 @@ function(ko,
 		
 		self.headNode = ko.observable();
 
-		var monitorTime = simulationSettings.networkMonitoringTime / 1000;
+		var monitorTime = ko.computed(function(){
+			return simulationSettings.networkMonitoringTime() / 1000;
+		});
 		self.isMonitoring = ko.observable(false);
-		self.monitoringCountDown = ko.observable(monitorTime);
+		self.monitoringCountDown = ko.observable(monitorTime());
 
 		function monitorForOutages(){
 			if(simulationSettings.networkElectionStyle == CONST.NetworkElectionStyle.Polled){
@@ -32,7 +34,7 @@ function(ko,
 							self._assignHeadNode();
 						}
 						self.isMonitoring(false);
-						self.monitoringCountDown(monitorTime);
+						self.monitoringCountDown(monitorTime());
 
 						setTimeout(monitorForOutages, 1000);
 					}, 500);

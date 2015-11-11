@@ -25,9 +25,9 @@ function(ko,
 		};
 		self.display.description = ko.computed(function(){
 			if(self.payload != null)
-				return self.message.name + "(" + self.display.statusDescription + ") " + payload;
+				return "[" + self.message.name + "] " + self.display.statusDescription + " " + payload;
 			else
-				return self.message.name + "(" + self.display.statusDescription + ")";
+				return "[" + self.message.name + "] " + self.display.statusDescription;
 		});
 	}
 

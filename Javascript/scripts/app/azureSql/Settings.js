@@ -1,32 +1,41 @@
-define(['app/Constants'],
-function(CONST){
+define(['knockout',
+		'app/Constants'],
+function(ko,
+		CONST){
 
 	function Settings(rawValues){
+		var self = this;
+
+		self.timeMultiplier = ko.observable(1);
+
 		// simulation settings
-		this.messageDeliveryTime = rawValues.messageDeliveryTime;
-		this.messageDeliveryJitter = rawValues.messageDeliveryJitter;
-		this.messageAtNodeDelay = rawValues.messageAtNodeDelay;
+		self.messageDeliveryTime = ko.computed(function(){ return self.timeMultiplier() * rawValues.messageDeliveryTime; });
+		self.messageDeliveryJitter = ko.computed(function(){ return self.timeMultiplier() * rawValues.messageDeliveryJitter; });
+		self.messageAtNodeDelay = ko.computed(function(){ return self.timeMultiplier() * rawValues.messageAtNodeDelay; });
 
 		// network settings
-		this.networkElectionStyle = rawValues.networkElectionStyle
+		self.networkElectionStyle = rawValues.networkElectionStyle
 
 		// node settings
-		this.writeQuorum = rawValues.writeQuorum;
-		this.readQuorum = rawValues.readQuorum;
+		self.writeQuorum = rawValues.writeQuorum;
+		self.readQuorum = rawValues.readQuorum;
 
 		// network operations + monitoring
-		this.networkMonitoringTime = rawValues.networkMonitoringTime;
-		this.timeUntilOfflineNodeIsRemoved = rawValues.timeUntilOfflineNodeIsRemoved;	// never remove bad nodes
+		self.networkMonitoringTime = ko.computed(function(){ return self.timeMultiplier() * rawValues.networkMonitoringTime; });
+		self.timeUntilOfflineNodeIsRemoved = ko.computed(function(){ return self.timeMultiplier() * rawValues.timeUntilOfflineNodeIsRemoved; }); // never remove bad nodes
 
 		// monkey settings
-		this.maximumOfflineNodeRepairTime = rawValues.maximumOfflineNodeRepairTime;
-		this.minimumTimeBetweenOutages = rawValues.minimumTimeBetweenOutages;
-
+		self.maximumOfflineNodeRepairTime = ko.computed(function(){ return self.timeMultiplier() * rawValues.maximumOfflineNodeRepairTime; });
+		self.minimumTimeBetweenOutages = ko.computed(function(){ return self.timeMultiplier() * rawValues.minimumTimeBetweenOutages; });
 
 		// display
-		this.display = {
-			description: 'Network: [' + CONST.NetworkCommunications.GatewaySendsToPrimary + ', ' + this.networkElectionStyle + '], ' + 
-						 'Quorum: ' + 'W' + this.writeQuorum + 'R' + this.readQuorum
+		self.display = {
+			description: ko.computed(function(){
+				var multiplier = (self.timeMultiplier() != 1 ? '1/' + self.timeMultiplier() : "1");
+				return 'Network: [' + CONST.NetworkCommunications.GatewaySendsToPrimary + ', ' + self.networkElectionStyle + '], ' + 
+					   'Quorum: ' + 'W' + self.writeQuorum + 'R' + self.readQuorum + ', ' +
+					   'Time: ' + multiplier + "x";
+			})
 		};
 	}
 

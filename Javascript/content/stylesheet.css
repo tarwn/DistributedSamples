@@ -81,7 +81,7 @@ body{
 	font-family: monospace;
 	font-size: 12px;
 	cursor: pointer;
-	margin: 2px 4px 0px 0px;
+	margin: 2px 2px 0px 0px;
 	border: 1px solid #666666;
 	border-radius: 8px;
 	color: #666666;
@@ -120,9 +120,11 @@ body{
 	background-color: #ffdddd;
 }
 .message.message-internal{
-	border-style: double;
 	background-color: #ddddaa;
-	border-width: 3px;
+	z-index: 1;
+}
+.message.message-internalmessage-badnews{
+	background-color: #ddcccc;
 	z-index: 1;
 }
 

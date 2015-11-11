@@ -2,35 +2,42 @@ define(['app/Constants'],
 function(CONST){
 
 	function Settings(rawValues){
+		var self = this;
+
+		self.timeMultiplier = ko.observable(1);
+
 		// simulation settings
-		this.messageDeliveryTime = rawValues.messageDeliveryTime;
-		this.messageDeliveryJitter = rawValues.messageDeliveryJitter;
-		this.messageAtNodeDelay = rawValues.messageAtNodeDelay;
+		self.messageDeliveryTime = ko.computed(function(){ return self.timeMultiplier() * rawValues.messageDeliveryTime; });
+		self.messageDeliveryJitter = ko.computed(function(){ return self.timeMultiplier() * rawValues.messageDeliveryJitter; });
+		self.messageAtNodeDelay = ko.computed(function(){ return self.timeMultiplier() * rawValues.messageAtNodeDelay; });
 
 		// network settings
-		this.networkCommunications = rawValues.networkCommunications;
-		this.networkElectionStyle = rawValues.networkElectionStyle
+		self.networkCommunications = rawValues.networkCommunications;
+		self.networkElectionStyle = rawValues.networkElectionStyle
 
 		// node settings
-		this.nodeElectionStyle = rawValues.nodeElectionStyle;
-		this.nodeAdditionStyle = rawValues.nodeAdditionStyle; // how does it sync to come online?
-		this.replicateWrites = rawValues.replicateWrites;		// used independently from writeQuorum, wq>1 or this will cause replication
-		this.writeQuorum = rawValues.writeQuorum;
-		this.readQuorum = rawValues.readQuorum;
+		self.nodeElectionStyle = rawValues.nodeElectionStyle;
+		self.nodeAdditionStyle = rawValues.nodeAdditionStyle; // how does it sync to come online?
+		self.replicateWrites = rawValues.replicateWrites;		// used independently from writeQuorum, wq>1 or this will cause replication
+		self.writeQuorum = rawValues.writeQuorum;
+		self.readQuorum = rawValues.readQuorum;
 
 		// network operations + monitoring
-		this.networkMonitoringTime = rawValues.networkMonitoringTime;
-		this.timeUntilOfflineNodeIsRemoved = rawValues.timeUntilOfflineNodeIsRemoved;	// never remove bad nodes
+		self.networkMonitoringTime = ko.computed(function(){ return self.timeMultiplier() * rawValues.networkMonitoringTime; });
+		self.timeUntilOfflineNodeIsRemoved = ko.computed(function(){ return self.timeMultiplier() * rawValues.timeUntilOfflineNodeIsRemoved; }); // never remove bad nodes
 
 		// monkey settings
-		this.maximumOfflineNodeRepairTime = rawValues.maximumOfflineNodeRepairTime;
-		this.minimumTimeBetweenOutages = rawValues.minimumTimeBetweenOutages;
-
+		self.maximumOfflineNodeRepairTime = ko.computed(function(){ return self.timeMultiplier() * rawValues.maximumOfflineNodeRepairTime; });
+		self.minimumTimeBetweenOutages = ko.computed(function(){ return self.timeMultiplier() * rawValues.minimumTimeBetweenOutages; });
 
 		// display
 		this.display = {
-			description: 'Network [' + this.networkCommunications + ', ' + this.networkElectionStyle + '], ' + 
-						 'Quorum: ' + 'W' + this.writeQuorum + 'R' + this.readQuorum
+			description: ko.computed(function(){
+				var multiplier = (self.timeMultiplier() != 1 ? '1/' + self.timeMultiplier() : "1");
+				return 'Network: [' + CONST.NetworkCommunications.GatewaySendsToPrimary + ', ' + self.networkElectionStyle + '], ' + 
+					   'Quorum: ' + 'W' + self.writeQuorum + 'R' + self.readQuorum + ', ' +
+					   'Time: ' + multiplier + "x";
+			})
 		};
 	}
 

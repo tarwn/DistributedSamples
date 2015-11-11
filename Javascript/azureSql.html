@@ -13,6 +13,8 @@
 
 <div class="" style="text-align: center;">
 	<span data-bind="text: display.description">Initializing...</span><br/>
+	<input type="button" value="slow" data-bind="visible: isInitialized, click: speedSlow" style="display: none" />
+	<input type="button" value="fast" data-bind="visible: isInitialized, click: speedFast" style="display: none" />
 	<input type="button" value="initializing..." data-bind="visible: isInitialized, value: pauseLabel, click: togglePause" style="display: none" />
 	<input type="button" value="initializing..." data-bind="visible: isInitialized, value: monkeyLabel, click: toggleMonkey"  style="display: none"/>
 	<input type="button" value="add node" data-bind="visible: isInitialized, click: addNode"  style="display: none"/>
@@ -165,6 +167,7 @@ function(ko,
 	var width = $(".network-container").width();
 	var height = $(".network-container").height();
 	var vm = new ViewModel(settings, 3, width, height, AzureNetwork, AzureNode);
+	vm.speedSlow();
 	ko.applyBindings(vm);
 
 	vm.startExternalMessageGeneration({

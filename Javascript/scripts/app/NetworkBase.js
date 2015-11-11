@@ -44,7 +44,7 @@ function(ko,
 		}
 
 		self._generateMessageDeliveryTime = function(){
-			return simulationSettings.messageDeliveryTime + ((Math.random() - .5) * simulationSettings.messageDeliveryJitter);
+			return simulationSettings.messageDeliveryTime() + ((Math.random() - .5) * simulationSettings.messageDeliveryJitter());
 		}
 
 		self.deliverMessage = function(message, node){
@@ -58,7 +58,7 @@ function(ko,
 				// begin delivery animation
 				self.messages.push(message);
 			})
-			.delay(simulationSettings.messageAtNodeDelay)
+			.delay(simulationSettings.messageAtNodeDelay())
 			.then(function(){
 				self.messages.remove(message);
 				if(node.status() != CONST.NodeStatus.Offline){
@@ -68,7 +68,7 @@ function(ko,
 					return self._getUnreachableResponse(message);
 				}
 			})
-			.delay(simulationSettings.messageAtNodeDelay)
+			.delay(simulationSettings.messageAtNodeDelay())
 			.then(function(messageResponse){
 				return self.deliverMessageResponse(messageResponse, node);
 			});
