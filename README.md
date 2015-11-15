@@ -1,3 +1,5 @@
+Link: http://tarwn.github.io/DistributedSamples/
+
 Goal
 ------
 
@@ -30,21 +32,28 @@ Elections:
 Windows Azure Database
 ========================
 
+Link: http://http://tarwn.github.io/DistributedSamples/Javascript/azureSql.html
+
 https://azure.microsoft.com/en-us/blog/fault-tolerance-in-windows-azure-sql-database/
 
+The storage part (SQL Server):
 * 3 Nodes, W2R1
-* 1 Node is the Primary at all times (I think network selected)
-* Uses consensus "similar to paxos" - I thin this is at te hardware level, not the nodes
-** Practical experience: Something (not the secondary nodes) monitors the Primary Node to detect outages and force an election
-** Maybe quorum is used for normal activities like handing off "primary" status to a secondary in order to receive updates?
-* Node outages:
-** Secondary nodes that are unavailable temporarily are cught up when brought back online
-** Secondary nodes that are unavailable longer are replaced
-** Primary node outages are detected by neighboring systems/monitoring and one of the secondaries is elected Primary
-* All communications comes through a gateway that directs all traffic to the primary
+* 1 Node is the Primary at all times
+* All incoming traffic goes to th Primary Node
+* Reads are served directly from Primary
+* Writes are replicated to secondary nodes, 2 node quorum required for success
+* Nodes offline for a short time will attempt a lg restore and then a full restore
+* (Not implemented) Nodes offline for a longer time will be replaced with a new node
+* When the Primary node dies, neighbors on the network detect the outage and force the fabric to elect a new Primary
 
-Differences:
-* Transaction log replication - I'm thinking about using epochs to indicate ranges of the transaction log to make this easier to manage without building real transaction logs
+Not Implemented or Simplified:
+* Fabric operations not implemented:
+** Fabric logic for provisioning nodes on servers ("Paxos-like algorithm" with no details)
+** Throttling
+** Dead server detection and replacement
+* Fabric operations simplified
+** Neighbor monitoring is instead done by the generic "network" object
+* Operations are kept mostly consecutive for display purposes, so little time spent ensuring the simulation handles concurrent execution well
 
 Dynamo
 ========
