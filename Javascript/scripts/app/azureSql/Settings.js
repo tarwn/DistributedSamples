@@ -28,6 +28,7 @@ function(ko,
 		// monkey settings
 		self.maximumOfflineNodeRepairTime = ko.computed(function(){ return self.timeMultiplier() * rawValues.maximumOfflineNodeRepairTime; });
 		self.minimumTimeBetweenOutages = ko.computed(function(){ return self.timeMultiplier() * rawValues.minimumTimeBetweenOutages; });
+		self.maximumTimeBetweenOutages = ko.computed(function(){ return self.timeMultiplier() * rawValues.maximumTimeBetweenOutages; });
 
 		// display
 		self.display = {

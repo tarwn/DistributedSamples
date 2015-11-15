@@ -31,7 +31,7 @@ function(ko,
 
 					setTimeout(function(){
 						if(self.headNode() == null || self.headNode().status() != CONST.NodeStatus.Online){
-							self._assignHeadNode();
+							self.assignHeadNode();
 						}
 						self.isMonitoring(false);
 						self.monitoringCountDown(monitorTime());
@@ -47,14 +47,15 @@ function(ko,
 
 		self.initialize = function(){
 			return new Promise(function(resolve){
-				self._assignHeadNode();
+				self.assignHeadNode();
 				monitorForOutages();
 				resolve();
 			});
 		};
 
-		self._assignHeadNode = function(){
-			var newHeadNode = self.selectRandomOnlineNode();
+		self.assignHeadNode = function(newHeadNode){
+			if(newHeadNode == null)
+				newHeadNode = self.selectRandomOnlineNode();
 			var oldHeadNode = self.headNode();
 			
 			self.headNode(newHeadNode);
@@ -66,7 +67,7 @@ function(ko,
 					node.specialStatus("secondary");
 				}
 			});
-		}
+		};
 
 		self.getMyNeighbors = function(requestor){
 			return self.nodes().filter(function(node){
@@ -76,11 +77,11 @@ function(ko,
 
 		self.deliverExternalMessage = function(message){
 			if(self.headNode() == null){
-				self._assignHeadNode();
+				self.assignHeadNode();
 			}
 			else if(self.headNode().status() != CONST.NodeStatus.Online){
 				if(simulationSettings.networkElectionStyle == CONST.NetworkElectionStyle.Immediate)
-					self._assignHeadNode();
+					self.assignHeadNode();
 			}
 
 			var targetNode = self.headNode();
