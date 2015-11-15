@@ -17,9 +17,11 @@
 	.reads-container,
 	.restores-container,
 	.interactive-container{
-		position: relative; 
-		width:800px; 
-		height: 600px; 
+		position: absolute; 
+		top: 0px;
+		bottom: 0px;
+		left: 0px;
+		right: 0px;
 		overflow: hidden; 
 		background-color: white;
 	}
@@ -37,7 +39,7 @@
 	<div style="position: absolute; top: 0px; right: 0px; bottom: 0px; left: 0px;">
 		<div class="network-gateway">
 			Network<br/>Gateway<br/>
-			<span class="network-monitor" data-bind="text: network.monitoringCountDown, css: { 'network-monitor-active': network.isMonitoring }"></span>
+			<!--<span class="network-monitor" data-bind="text: network.monitoringCountDown, css: { 'network-monitor-active': network.isMonitoring }"></span>-->
 		</div>
 
 		<div data-bind="visible: isInitialized" style="display: none">
@@ -139,8 +141,8 @@ function($,
 		maximumTimeBetweenOutages:		20000
 	});
 	
-	var width = 800;
-	var height = 600;
+	var width = $(".reads-container").width();
+	var height = $(".reads-container").height();
 	var expectedNodeHeight = 220;
 	var dataKeys = ["D0","D1","D2","D3","D4"];
 

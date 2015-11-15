@@ -17,9 +17,11 @@
 	.reads-container,
 	.restores-container,
 	.interactive-container{
-		position: relative; 
-		width:800px; 
-		height: 600px; 
+		position: absolute; 
+		top: 0px;
+		bottom: 0px;
+		left: 0px;
+		right: 0px;
 		overflow: hidden; 
 		background-color: white;
 	}
@@ -141,12 +143,12 @@ function($,
 		maximumTimeBetweenOutages:		20000
 	});
 	
-	var width = 800;
-	var height = 600;
+	var width = $(".interactive-container").width();
+	var height = $(".interactive-container").height();
 	var expectedNodeHeight = 220;
 
 	var interactiveVM = new ViewModel(settings, 3, width, height, expectedNodeHeight, AzureNetwork, AzureNode);
-	ko.applyBindings(interactiveVM, $(".restores-container")[0]);
+	ko.applyBindings(interactiveVM, $(".interactive-container")[0]);
 	interactiveVM.startExternalMessageGeneration(["D0","D1","D2","D3","D4"]);
 });
 </script>
