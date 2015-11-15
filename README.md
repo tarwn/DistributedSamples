@@ -32,7 +32,7 @@ Elections:
 Windows Azure Database
 ========================
 
-Link: http://http://tarwn.github.io/DistributedSamples/Javascript/azureSql.html
+Link: http://tarwn.github.io/DistributedSamples/Javascript/azureSql.html
 
 https://azure.microsoft.com/en-us/blog/fault-tolerance-in-windows-azure-sql-database/
 
@@ -48,11 +48,11 @@ The storage part (SQL Server):
 
 Not Implemented or Simplified:
 * Fabric operations not implemented:
-** Fabric logic for provisioning nodes on servers ("Paxos-like algorithm" with no details)
-** Throttling
-** Dead server detection and replacement
+	* Fabric logic for provisioning nodes on servers ("Paxos-like algorithm" with no details)
+	* Throttling
+	* Dead server detection and replacement
 * Fabric operations simplified
-** Neighbor monitoring is instead done by the generic "network" object
+	* Neighbor monitoring is instead done by the generic "network" object
 * Operations are kept mostly consecutive for display purposes, so little time spent ensuring the simulation handles concurrent execution well
 
 Dynamo

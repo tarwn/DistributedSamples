@@ -160,7 +160,6 @@ function(ko,
 		});
 		self.toggleMonkey = function(){
 			self.isMonkeyActive(!self.isMonkeyActive());
-			console.log('monkey: ' + self.isMonkeyActive());
 			if(self.isMonkeyActive() && self.isMonkeyRunning() == false){
 				startTheMonkey();
 			}
@@ -335,8 +334,6 @@ function(ko,
 				self.isRunning(false);
 				setTimeout(executeScript, delayTime);
 			};
-			
-			console.log(operation);
 
 			if(operation.election != null){
 				self.network.assignHeadNode(getNode(operation.election));
