@@ -8,90 +8,52 @@
 
     <script src="scripts/lib/require-2.1.20.min.js"></script>
     <script src="scripts/main.js"></script>
+	<style>
+		.writes-container,
+		.reads-container,
+		.restores-container,
+		.interactive-container{
+			position: relative; 
+			width:800px; 
+			height: 600px; 
+			overflow: hidden; 
+			border: 2px solid #dddddd; 
+			background-color: white;
+		}
+	</style>
 </head>
 <body>
 
-<div class="" style="text-align: center;">
-	<span data-bind="text: display.description">Initializing...</span><br/>
-	<input type="button" value="slow" data-bind="visible: isInitialized, click: speedSlow" style="display: none" />
-	<input type="button" value="fast" data-bind="visible: isInitialized, click: speedFast" style="display: none" />
-	<input type="button" value="initializing..." data-bind="visible: isInitialized, value: pauseLabel, click: togglePause" style="display: none" />
-	<input type="button" value="initializing..." data-bind="visible: isInitialized, value: monkeyLabel, click: toggleMonkey"  style="display: none"/>
-	<input type="button" value="add node" data-bind="visible: isInitialized, click: addNode"  style="display: none"/>
+<h1>Writes</h1>
+<div class="writes-container">
+	<div style="position: absolute; bottom: 5px; left: 5px; z-index: 10;">
+		<input type="button" value="Run!" data-bind="click: togglePause, value: isPaused() ? 'Run!' : 'Pause...'" style="padding: .25em 1em; font-size: 14pt" />
+	</div>
+	<!-- ko template: { name: 'network-container' } -->
+	<!-- /ko -->
 </div>
 
-<div class="container">
-
-	<!--
-	<div class="log right">
-		<b>Message Log</b>
-		<!-- ko foreach: logContents -- >
-		<div data-bind="text: $data"></div>
-		<!-- /ko -- >
+<h1>Reads</h1>
+<div class="reads-container">
+	<div style="position: absolute; bottom: 5px; left: 5px; z-index: 10;">
+		<input type="button" value="Run!" data-bind="click: togglePause, value: isPaused() ? 'Run!' : 'Pause...'" style="padding: .25em 1em; font-size: 14pt" />
 	</div>
-	-->
+	<!-- ko template: { name: 'network-container' } -->
+	<!-- /ko -->
+</div>
 
-	<div class="log">
-		<span class="log-title">SLA Actual</span><br />
-		<br/>
-		<table class="log-table">
-			<tr class="log-table-stats-head">
-				<td>Reads</td>
-				<td>Total</td>
-				<td>Good</td>
-				<td>Stale</td>
-				<td>Wrong</td>
-				<td>Bad 404</td>
-				<td>Error</td>
-			</tr>
-			<tr class="log-table-stats">
-				<td data-bind="text: expectations.reads.goodPercent">0</td>
-				<td data-bind="text: expectations.reads.totalCount">0</td>
-				<td data-bind="text: expectations.reads.goodCount">0</td>
-				<td data-bind="text: expectations.reads.staleCount">0</td>
-				<td data-bind="text: expectations.reads.invalidCount">0</td>
-				<td data-bind="text: expectations.reads.badCount">0</td>
-				<td data-bind="text: expectations.reads.errorCount">0</td>
-			</tr>
-			<tr><td colspan="6"></td></tr>
-			<tr class="log-table-stats-head">
-				<td>Writes</td>
-				<td>Total</td>
-				<td>Good</td>
-				<td>Error</td>
-			</tr>
-			<tr class="log-table-stats">
-				<td data-bind="text: expectations.writes.goodPercent">0</td>
-				<td data-bind="text: expectations.writes.totalCount">0</td>
-				<td data-bind="text: expectations.writes.goodCount">0</td>
-				<td data-bind="text: expectations.writes.errorCount">0</td>
-			</tr>
-			<tr><td colspan="6"></td></tr>
-			<tr class="log-table-stats-head">
-				<td>Outages</td>
-				<td>Total</td>
-			</tr>
-			<tr class="log-table-stats">
-				<td></td>
-				<td data-bind="text: expectations.outages.outageCount">0</td>
-			</tr>
-		</table>
-		
-		<br/>
-
-		<span class="log-title">Expectations Log</span><br />
-		<table>
-			<tbody data-bind="foreach: externalResults">
-				<tr>
-					<!--<td data-bind="text: category"></td>-->
-					<td data-bind="text: status" valign="top"></td>
-					<td data-bind="text: text" valign="top" style="overflow: hidden;"></td>
-				</tr>
-			</tbody>
-		</table>
+<h1>Restores</h1>
+<div class="restores-container">
+	<div style="position: absolute; bottom: 5px; left: 5px; z-index: 10;">
+		<input type="button" value="Run!" data-bind="click: togglePause, value: isPaused() ? 'Run!' : 'Pause...'" style="padding: .25em 1em; font-size: 14pt" />
 	</div>
+	<!-- ko template: { name: 'network-container' } -->
+	<!-- /ko -->
+</div>
 
-	<div class="network-container">
+</body>
+<script type="text/html" id="network-container">
+	<div style="position: absolute; top: 0px; right: 0px; bottom: 0px; left: 0px;">
 		<div class="network-gateway">
 			Network<br/>Gateway<br/>
 			<span class="network-monitor" data-bind="text: network.monitoringCountDown, css: { 'network-monitor-active': network.isMonitoring }"></span>
@@ -155,17 +117,19 @@
 			<!-- /ko -->
 		</div>
 	</div>
-</div>
-</body>
+</script>
+
 <script type="text/javascript">
 
-require(["knockout",
+require(["jquery",
+		 "knockout",
 		 "app/Constants",
 		 "app/ViewModel",
 		 "app/azureSql/Settings",
 		 "app/azureSql/Network",
 		 "app/azureSql/Node"],
-function(ko,
+function($,
+		 ko,
 		 CONST,
 		 ViewModel,
 		 AzureSettings,
@@ -174,8 +138,8 @@ function(ko,
 	
 	var settings = new AzureSettings({
 		// simulation settings
-		messageDeliveryTime:	750,
-		messageDeliveryJitter:	400,
+		messageDeliveryTime:	500,
+		messageDeliveryJitter:	250,
 		messageAtNodeDelay:		0,
 
 		// network settings
@@ -192,18 +156,50 @@ function(ko,
 		
 		// monkey settings
 		maximumOfflineNodeRepairTime:	10000,
-		minimumTimeBetweenOutages:		15000,
-		maximumTimeBetweenOutages:		30000
+		minimumTimeBetweenOutages:		10000,
+		maximumTimeBetweenOutages:		20000
 	});
 	
-	var width = $(".network-container").width();
-	var height = $(".network-container").height();
+	var width = 800;
+	var height = 600;
 	var expectedNodeHeight = 220;
-	var vm = new ViewModel(settings, 3, width, height, expectedNodeHeight, AzureNetwork, AzureNode);
-	vm.speedSlow();
-	ko.applyBindings(vm);
+	var dataKeys = ["D0","D1","D2","D3","D4"];
 
-	vm.startExternalMessageGeneration(["D0","D1","D2","D3","D4"]);
+	var writesVM = new ViewModel(settings, 3, width, height, expectedNodeHeight, AzureNetwork, AzureNode);
+	ko.applyBindings(writesVM, $(".writes-container")[0]);
+	writesVM.startExternalMessageScript([
+		{ execute: writesVM.speedSlow },
+		{ operationType: CONST.MessageTypes.Write, limit: -1 }
+	], dataKeys);
+
+	var readsVM = new ViewModel(settings, 3, width, height, expectedNodeHeight, AzureNetwork, AzureNode);
+	ko.applyBindings(readsVM, $(".reads-container")[0]);
+	readsVM.startExternalMessageScript([
+		{ execute: readsVM.speedFast },
+		{ operationType: CONST.MessageTypes.Write, limit: 5 },
+		{ execute: readsVM.speedSlow },
+		{ operationType: CONST.MessageTypes.Read, limit: -1 }
+	], dataKeys);
+
+	var restoresVM = new ViewModel(settings, 3, width, height, expectedNodeHeight, AzureNetwork, AzureNode);
+	ko.applyBindings(restoresVM, $(".restores-container")[0]);
+	restoresVM.startExternalMessageScript([
+		{ election: "A" },
+		{ execute: readsVM.speedFast },
+		{ operationType: CONST.MessageTypes.Write, limit: 2 },
+		{ offline: "B" },
+		{ operationType: CONST.MessageTypes.Write, limit: 2 },
+		{ execute: restoresVM.speedSlow },
+		{ online: "B" },
+		{ execute: readsVM.speedFast },
+		{ operationType: CONST.MessageTypes.Write, limit: 1 },
+		{ offline: "B" },
+		{ operationType: CONST.MessageTypes.Write, limit: 5 },
+		{ execute: restoresVM.speedSlow },
+		{ online: "B" },
+		{ execute: readsVM.speedFast },
+		{ loop: 2 }
+	], dataKeys);
 });
 
 </script>

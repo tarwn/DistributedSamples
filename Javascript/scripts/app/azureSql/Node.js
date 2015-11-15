@@ -50,7 +50,7 @@ function(ko,
 				return network.deliverMessage(restoreMessage, neighbor);
 			});
 
-			Promise.all(restoreRequests).then(function(responses){
+			return Promise.all(restoreRequests).then(function(responses){
 				var latestRestore = null;
 
 				// identify latest response (csn)
@@ -113,7 +113,6 @@ function(ko,
 
 			return Promise.any(fullRestoreRequests).then(function(response){
 				self.storage.removeAll();
-				console.log(response);
 				var backup = response.payload.backup;
 				// apply
 				if(backup != null){
@@ -122,6 +121,7 @@ function(ko,
 					});
 				}
 				latestCSN = response.payload.csn;
+				self.transactionLog.removeAll();
 			}).catch(Promise.AggregateError, function(err) {
 				self.display.incomingValueAction('No restores, start dirty');
 			});
@@ -306,8 +306,6 @@ function(ko,
 					return transaction.csn >= targetCSN;
 				});
 
-				console.log(transactions);
-
 				if(transactions.length > 0 && transactions[0].csn == targetCSN){
 					var latestCSN = transactions[transactions.length - 1].csn;
 					transactions.shift();	// remove the matching transaction
@@ -341,11 +339,14 @@ function(ko,
 	function RestoreLog(csn, canApplyTransactions, updatesLog){
 		this.csn = csn;
 		this.canApplyTransactions = canApplyTransactions;
-		this.updatesLog = updatesLog || [];
+		this.updatesLog = updatesLog;
 	}
 
 	RestoreLog.prototype.toString = function(){
-		return "(LogRestore to " + this.csn + ", " + this.updatesLog.length + " trans)";
+		if(this.updatesLog == null)
+			return "";
+		else
+			return "(LogRestore to CSN " + this.csn + ": " + this.updatesLog.length + " trans)";
 	};
 
 	function RestoreFull(csn, backup){
@@ -354,7 +355,7 @@ function(ko,
 	}
 
 	RestoreFull.prototype.toString = function(){
-		return "(FullRestore to " + this.csn + ")";
+		return "(FullRestore to CSN " + this.csn + ")";
 	};
 
 	Node.prototype = Object.create(NodeBase.prototype);
