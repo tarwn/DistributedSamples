@@ -384,6 +384,13 @@ function(ko,
 			else{
 				var randomDataKeyIndex = Math.floor(Math.random() * Object.keys(self.potentialDataValues).length);
 				var randomDataKey = Object.keys(self.potentialDataValues)[randomDataKeyIndex];
+
+				// if no value has been stored anywhere yet, try another random message/target
+				if(self.potentialDataValues[randomDataKey].length == 0){
+					executeScript();
+					return;
+				}
+
 				var message = new Message(simulationSettings, "M" + msgCount, CONST.MessageTypes.Read, randomDataKey);
 				self.network.deliverExternalMessage(message).then(function(response){
 					var result = evaluateReadResponse(randomDataKey, response);
