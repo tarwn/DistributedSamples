@@ -14,6 +14,8 @@ function(ko,
 	function ViewModel(simulationSettings, numberOfStartingNodes, width, height, expectedNodeHeight, Network, Node){
 		var self = this;
 		
+		self.settings = simulationSettings;
+
 		self.logContents = ko.observableArray([]);
 		self.log = function(logMessage){
 			self.logContents.unshift(logMessage);
@@ -150,7 +152,15 @@ function(ko,
 			}
 		};
 		self.speedSlow = function(){
-				simulationSettings.timeMultiplier(4);
+			simulationSettings.timeMultiplier(4);
+		};
+		self.toggleSpeed = function(){
+			if(simulationSettings.timeMultiplier() > 1){
+				self.speedFast();
+			}
+			else{
+				self.speedSlow();
+			}
 		};
 
 		self.isMonkeyActive = ko.observable(false);

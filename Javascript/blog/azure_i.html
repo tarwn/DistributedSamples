@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title></title>
+<base href="../" />
+<link rel="stylesheet" href="content/stylesheet.css" />
+
+<script src="scripts/lib/require-2.1.20.min.js"></script>
+<script src="scripts/main.js"></script>
+<style>
+	body{
+		padding: 0px;
+		margin: 0px;
+	}
+	.writes-container,
+	.reads-container,
+	.restores-container,
+	.interactive-container{
+		position: relative; 
+		width:800px; 
+		height: 600px; 
+		overflow: hidden; 
+		background-color: white;
+	}
+</style>
+</head>
+<body>
+<div class="interactive-container">
+	<div style="position: absolute; bottom: 5px; left: 5px; z-index: 10;">
+		<input type="button" value="Send Messages" data-bind="click: togglePause, value: isPaused() ? 'Send Messages' : 'Stop Sending'" style="padding: .25em 1em; font-size: 10pt" />
+		<input type="button" value="Start Outages" data-bind="click: toggleMonkey, value: !isMonkeyActive() ? 'Start Outages' : 'Stop Outages'" style="padding: .25em 1em; font-size: 10pt" />
+		<input type="button" value="Go Faster" data-bind="click: toggleSpeed, value: settings.timeMultiplier() == 1 ? 'Go Slower' : 'Go Faster'" style="padding: .25em 1em; font-size: 10pt" />
+	</div>
+	<!-- ko template: { name: 'network-container' } -->
+	<!-- /ko -->
+</div>
+<script type="text/html" id="network-container">
+	<div style="position: absolute; top: 0px; right: 0px; bottom: 0px; left: 0px;">
+		<div class="network-gateway">
+			Network<br/>Gateway<br/>
+			<span class="network-monitor" data-bind="text: network.monitoringCountDown, css: { 'network-monitor-active': network.isMonitoring }"></span>
+		</div>
+
+		<div data-bind="visible: isInitialized" style="display: none">
+
+			<!-- ko foreach: network.nodes -->
+				<div class="node" data-bind="style: { top: display.y() + 'px', left: display.x() + 'px' }, css: { 'node-status-online': status() == 'Online', 'node-status-offline': status() == 'Offline' }" style="width: 250px;">
+					<span class="remove-node" data-bind="click: $root.removeNode">X</span>
+					<div class="node-name" data-bind="text: display.description"></div>
+					<div class="node-queue">
+						Action:
+						<!-- ko if: display.incomingValueAction -->
+						<div data-bind="text: display.incomingValueAction" class="node-action"></div>
+						<!-- /ko -->
+						<div data-bind="ifnot: display.incomingValueAction, visible: display.incomingValueAction() == null" class="node-action-empty">n/a</div>
+					</div>
+					<div class="node-storage" style="float: left; width:  40%">
+						Storage:
+						<!-- ko if: storage != null && storage().length > 0 -->
+						<table class="node-storage-list">
+							<tbody data-bind="foreach: storage">
+								<tr>
+									<td data-bind="text: key"></td>
+									<td data-bind="text: value"></td>
+								</tr>
+							</tbody>
+						</table>
+						<!-- /ko -->
+						<div data-bind="if: storage().length == 0, visible: storage().length == 0" class="node-storage-slot-empty">empty</div>
+					</div>
+					<div class="node-storage" style="float: right; width: 40%">
+						Trans Log:
+						<!-- ko if: transactionLog().length > 0 || outstandingTransactions().length > 0 -->
+						<table class="node-transaction-list">
+							<tbody>
+								<!-- ko foreach: transactionLog -->
+								<tr class="complete-transaction">
+									<td data-bind="text: csn"></td>
+									<td data-bind="text: data"></td>
+								</tr>
+								<!-- /ko -->
+								<!-- ko foreach: outstandingTransactions -->
+								<tr class="incomplete-transaction">
+									<td data-bind="text: csn"></td>
+									<td data-bind="text: data"></td>
+								</tr>
+								<!-- /ko -->
+							</tbody>
+						</table>
+						<!-- /ko -->
+						<div data-bind="visible: transactionLog().length == 0 && outstandingTransactions().length == 0" class="node-storage-slot-empty">empty</div>
+					</div>
+					<br style="clear: both" />
+				</div>
+			<!-- /ko -->
+
+			<!-- ko foreach: network.messages -->
+				<div data-bind="text: display.description, deliverMessage: $data, css: { 'message-goodnews': display.isGood, 'message-badnews': !display.isGood(), 'message-internal': type == 'Internal' }" class="message"></div>
+			<!-- /ko -->
+		</div>
+	</div>
+</script>
+<script type="text/javascript">
+require(["jquery",
+		 "knockout",
+		 "app/Constants",
+		 "app/ViewModel",
+		 "app/azureSql/Settings",
+		 "app/azureSql/Network",
+		 "app/azureSql/Node"],
+function($,
+		 ko,
+		 CONST,
+		 ViewModel,
+		 AzureSettings,
+		 AzureNetwork,
+		 AzureNode){
+	
+	var settings = new AzureSettings({
+		// simulation settings
+		messageDeliveryTime:	500,
+		messageDeliveryJitter:	250,
+		messageAtNodeDelay:		0,
+
+		// network settings
+		networkElectionStyle:	CONST.NetworkElectionStyle.Polled,
+		
+		// node settings
+		writeQuorum:			2,
+		readQuorum:				1,
+		recoveryTransactionLogLength: 4,
+		
+		// network operations + monitoring
+		networkMonitoringTime:	10000,
+		timeUntilOfflineNodeIsRemoved: -1,	// never remove bad nodes
+		
+		// monkey settings
+		maximumOfflineNodeRepairTime:	10000,
+		minimumTimeBetweenOutages:		10000,
+		maximumTimeBetweenOutages:		20000
+	});
+	
+	var width = 800;
+	var height = 600;
+	var expectedNodeHeight = 220;
+
+	var interactiveVM = new ViewModel(settings, 3, width, height, expectedNodeHeight, AzureNetwork, AzureNode);
+	ko.applyBindings(interactiveVM, $(".restores-container")[0]);
+	interactiveVM.startExternalMessageGeneration(["D0","D1","D2","D3","D4"]);
+});
+</script>
+</body>
+</html>
