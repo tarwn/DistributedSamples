@@ -147,6 +147,7 @@ function($,
 	var writesVM = new ViewModel(settings, 3, width, height, expectedNodeHeight, AzureNetwork, AzureNode);
 	ko.applyBindings(writesVM, $(".writes-container")[0]);
 	writesVM.startExternalMessageScript([
+		{ election: "A" },
 		{ execute: writesVM.speedSlow },
 		{ operationType: CONST.MessageTypes.Write, limit: -1 }
 	], dataKeys);

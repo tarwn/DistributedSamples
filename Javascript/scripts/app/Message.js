@@ -21,11 +21,9 @@ function(ko,
 		};
 		self.display.description = ko.computed(function(){
 			if(self.type == CONST.MessageTypes.Write)
-				return "[" + self.name + '] ' + self.type + ' ' + payload;
+				return "[" + self.name + '] ' + simulationSettings.WriteName + ' ' + payload;
 			else if(self.type == CONST.MessageTypes.Read)
-				return "[" + self.name + '] ' + self.type + ' ' + payload;
-			else if(self.type == CONST.MessageTypes.Internal)
-				return "[" + self.name + '] ' + self.type + ' ' + payload;
+				return "[" + self.name + '] ' + simulationSettings.ReadName + ' ' + payload;
 			else
 				return "[" + self.name + '] ' + self.type;
 		});

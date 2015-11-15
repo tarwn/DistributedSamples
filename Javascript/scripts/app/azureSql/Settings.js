@@ -31,6 +31,8 @@ function(ko,
 		self.maximumTimeBetweenOutages = ko.computed(function(){ return self.timeMultiplier() * rawValues.maximumTimeBetweenOutages; });
 
 		// display
+		self.ReadName = "Select";
+		self.WriteName = "Insert/Update";
 		self.display = {
 			description: ko.computed(function(){
 				var multiplier = (self.timeMultiplier() != 1 ? '1/' + self.timeMultiplier() : "1");

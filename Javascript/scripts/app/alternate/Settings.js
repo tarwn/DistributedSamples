@@ -1,5 +1,7 @@
-define(['app/Constants'],
-function(CONST){
+define(['knockout',
+		'app/Constants'],
+function(ko,
+		CONST){
 
 	function Settings(rawValues){
 		var self = this;
@@ -31,6 +33,8 @@ function(CONST){
 		self.minimumTimeBetweenOutages = ko.computed(function(){ return self.timeMultiplier() * rawValues.minimumTimeBetweenOutages; });
 
 		// display
+		self.ReadName = "Read";
+		self.WriteName = "Write";
 		this.display = {
 			description: ko.computed(function(){
 				var multiplier = (self.timeMultiplier() != 1 ? '1/' + self.timeMultiplier() : "1");

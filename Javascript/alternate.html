@@ -170,17 +170,14 @@ function(ko,
 	
 	var width = $(".network-container").width();
 	var height = $(".network-container").height();
-	var vm = new ViewModel(settings, 4, width, height, AltNetwork, AltNode);
+	var width = $(".network-container").width();
+	var height = $(".network-container").height();
+	var expectedNodeHeight = 220;
+	var vm = new ViewModel(settings, 3, width, height, expectedNodeHeight, AltNetwork, AltNode);
 	vm.speedSlow();
 	ko.applyBindings(vm);
 
-	vm.startExternalMessageGeneration({
-		"D0": [],
-		"D1": [],
-		"D2": [],
-		"D3": [],
-		"D4": []
-	});
+	vm.startExternalMessageGeneration(["D0","D1","D2","D3","D4"]);
 });
 
 </script>

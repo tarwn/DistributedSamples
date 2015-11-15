@@ -147,6 +147,7 @@ function($,
 	var readsVM = new ViewModel(settings, 3, width, height, expectedNodeHeight, AzureNetwork, AzureNode);
 	ko.applyBindings(readsVM, $(".reads-container")[0]);
 	readsVM.startExternalMessageScript([
+		{ election: "A" },
 		{ execute: readsVM.speedFast },
 		{ operationType: CONST.MessageTypes.Write, limit: 5 },
 		{ execute: readsVM.speedSlow },

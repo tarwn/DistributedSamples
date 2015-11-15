@@ -44,6 +44,7 @@ function(ko,
 		self.network = new Network(simulationSettings, self.log);
 		self.display = {
 			description: ko.computed(function(){
+				console.log(self.network);
 				return self.network.onlineNodes().length + 
 						" of " + self.network.nodes().length + " nodes online, " +
 						simulationSettings.display.description();

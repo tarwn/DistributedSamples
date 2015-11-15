@@ -13,7 +13,7 @@ function(ko,
 		NetworkBase.call(this, simulationSettings, logFunction);
 
 		var self = this;
-		
+		console.log('here');
 		self.headNode = ko.observable();
 
 		var monitorTime = simulationSettings.networkMonitoringTime / 1000;
