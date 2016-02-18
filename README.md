@@ -36,6 +36,8 @@ Link: http://tarwn.github.io/DistributedSamples/Javascript/azureSql.html
 
 https://azure.microsoft.com/en-us/blog/fault-tolerance-in-windows-azure-sql-database/
 
+SQL Azure provides a familiar SQL Server service with reduced maintenance needs, running transparently on multiple replicas. SQL Azure replicas exist to scale resiliency, rather than performance. 
+
 The storage part (SQL Server):
 * 3 Nodes, W2R1
 * 1 Node is the Primary at all times
@@ -54,10 +56,5 @@ Not Implemented or Simplified:
 * Fabric operations simplified
 	* Neighbor monitoring is instead done by the generic "network" object
 * Operations are kept mostly consecutive for display purposes, so little time spent ensuring the simulation handles concurrent execution well
-
-Dynamo
-========
-
-whitepaper link here
 
 
