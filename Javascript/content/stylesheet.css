@@ -102,8 +102,10 @@ body{
 
 .node-action,
 .node-storage-list tr,
-.node-transaction-list tr{
+.node-transaction-list tr,
+.node-storage-slot {
 	border: 1px solid #666666;
+	padding: 1px 4px;
 }
 .node-storage-list td,
 .node-transaction-list td{

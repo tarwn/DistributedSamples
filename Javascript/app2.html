@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <title></title>
+
+	<link rel="stylesheet" href="content/stylesheet.css" />
+
+    <script src="scripts/lib/require-2.1.20.min.js"></script>
+    <script src="scripts/main.js"></script>
+</head>
+<body>
+
+<div class="" style="text-align: center;">
+	<span data-bind="text: display.description">Initializing...</span><br/>
+	<input type="button" value="slow" data-bind="visible: isInitialized, click: speedSlow" style="display: none" />
+	<input type="button" value="fast" data-bind="visible: isInitialized, click: speedFast" style="display: none" />
+	<input type="button" value="initializing..." data-bind="visible: isInitialized, value: pauseLabel, click: togglePause" style="display: none" />
+	<input type="button" value="initializing..." data-bind="visible: isInitialized, value: monkeyLabel, click: toggleMonkey"  style="display: none"/>
+	<!-- <input type="button" value="add node" data-bind="visible: isInitialized, click: addNode"  style="display: none"/> -->
+</div>
+
+<div class="container">
+
+	<!--
+	<div class="log right">
+		<b>Message Log</b>
+		<!-- ko foreach: logContents -- >
+		<div data-bind="text: $data"></div>
+		<!-- /ko -- >
+	</div>
+	-->
+
+	<div class="log">
+		<span class="log-title">SLA Actual</span><br />
+		<br/>
+		<table class="log-table">
+			<tr class="log-table-stats-head">
+				<td>Reads</td>
+				<td>Total</td>
+				<td>Good</td>
+				<td>Stale</td>
+				<td>Wrong</td>
+				<td>Bad 404</td>
+				<td>Error</td>
+			</tr>
+			<tr class="log-table-stats">
+				<td data-bind="text: expectations.reads.goodPercent">0</td>
+				<td data-bind="text: expectations.reads.totalCount">0</td>
+				<td data-bind="text: expectations.reads.goodCount">0</td>
+				<td data-bind="text: expectations.reads.staleCount">0</td>
+				<td data-bind="text: expectations.reads.invalidCount">0</td>
+				<td data-bind="text: expectations.reads.badCount">0</td>
+				<td data-bind="text: expectations.reads.errorCount">0</td>
+			</tr>
+			<tr><td colspan="6"></td></tr>
+			<tr class="log-table-stats-head">
+				<td>Writes</td>
+				<td>Total</td>
+				<td>Good</td>
+				<td>Error</td>
+			</tr>
+			<tr class="log-table-stats">
+				<td data-bind="text: expectations.writes.goodPercent">0</td>
+				<td data-bind="text: expectations.writes.totalCount">0</td>
+				<td data-bind="text: expectations.writes.goodCount">0</td>
+				<td data-bind="text: expectations.writes.errorCount">0</td>
+			</tr>
+			<tr><td colspan="6"></td></tr>
+			<tr class="log-table-stats-head">
+				<td>Outages</td>
+				<td>Total</td>
+			</tr>
+			<tr class="log-table-stats">
+				<td></td>
+				<td data-bind="text: expectations.outages.outageCount">0</td>
+			</tr>
+		</table>
+		
+		<br/>
+
+		<span class="log-title">Expectations Log</span><br />
+		<table>
+			<tbody data-bind="foreach: externalResults">
+				<tr>
+					<!--<td data-bind="text: category"></td>-->
+					<td data-bind="text: status" valign="top"></td>
+					<td data-bind="text: text" valign="top" style="overflow: hidden;"></td>
+				</tr>
+			</tbody>
+		</table>
+	</div>
+
+	<div class="network-container">
+		<div class="network-gateway">
+			Network<br/>Gateway<br/>
+			<span class="network-monitor" data-bind="text: network.monitoringCountDown, css: { 'network-monitor-active': network.isMonitoring }"></span>
+		</div>
+
+		<div data-bind="visible: isInitialized" style="display: none">
+
+			<!-- ko foreach: network.nodes -->
+				<div class="node" data-bind="if: isInitialized, style: { top: display.y() + 'px', left: display.x() + 'px' }, css: { 'node-status-online': status() == 'Online', 'node-status-offline': status() == 'Offline' }">
+					<div class="node-name" data-bind="text: display.description"></div>
+					<div class="node-queue">
+						Action:
+						<div data-bind="visible: !display.incomingMessageStatusIsEmpty(), text: display.incomingMessageStatus" class="node-storage-slot"></div>
+						<div data-bind="visible: display.incomingMessageStatusIsEmpty()" class="node-storage-slot-empty">n/a</div>
+					</div>
+					<div class="node-storage">
+						Storage:
+						<!-- ko foreach: storage -->
+						<div data-bind="text: display.description" class="node-storage-slot"></div>
+						<!-- /ko -->
+						<div data-bind="if: storage().length == 0, visible: storage().length == 0" class="node-storage-slot-empty">empty</div>
+					</div>
+				</div>
+			<!-- /ko -->
+
+			<!-- ko foreach: network.messages -->
+				<div data-bind="text: display.description, deliverMessage2: $data, css: { 'message-goodnews': display.isGood, 'message-badnews': !display.isGood(), 'message-internal': type == 'Internal' }" class="message"></div>
+			<!-- /ko -->
+		</div>
+	</div>
+</div>
+</body>
+<script type="text/javascript">
+
+require(["knockout",
+		 "bluebird",
+		 "app2/Constants",
+		 "app2/ViewModel",
+		 "app2/Network",
+		 "app2/Node"],
+function(ko,
+		 Promise,
+		 CONST,
+		 ViewModel,
+		 Network,
+		 Node){
+	
+	// display settings
+	var displaySettings = {
+		width: $(".network-container").width(),
+		height: $(".network-container").height(),
+		nodeHeight: 220,
+		description: ko.observable("Initial app2 sim")
+	};
+
+	// simulation settings + behavior
+	var simulationSettings = { 
+		timeMultiplier: ko.observable(1),
+		messageAtNodeDelay: ko.observable(200),
+		messageDeliveryTime: ko.observable(500),
+		messageDeliveryJitter: ko.observable(200)
+	};
+
+	var local = { 
+		log: function(o) { console.log(o) }
+	};
+
+	simulationSettings.viewModelInitialize = function(network){
+		local.log('viewmodel: initializing');
+		network.nodes.push(new Node(simulationSettings, displaySettings, 'Node #1', CONST.NodeStatus.Online, network.deliverMessage));
+		network.nodes.push(new Node(simulationSettings, displaySettings, 'Node #2', CONST.NodeStatus.Online, network.deliverMessage));
+		network.nodes.push(new Node(simulationSettings, displaySettings, 'Node #3', CONST.NodeStatus.Online, network.deliverMessage));
+	};
+
+	simulationSettings.networkInitializeProcessor = function(network){
+		local.log('network: initializing');
+	};
+
+	simulationSettings.getIncomingNode = function(availableNodes){
+		var onlineNodes = availableNodes.filter(function(node){
+			return node.status() == CONST.NodeStatus.Online;
+		});
+
+		if(onlineNodes.length == 0)
+				return null;
+
+		var randomNodeIndex = Math.floor(Math.random() * onlineNodes.length);
+		return onlineNodes[randomNodeIndex];
+	};
+
+	simulationSettings.nodeInitialize = function(node){
+		local.log('node[' + node.name + ']: initializing');
+		node.display.incomingMessageStatus = ko.observable();
+		node.display.incomingMessageStatusIsEmpty = ko.computed(function(){
+			return node.display.incomingMessageStatus() == null;
+		});
+		node.storage = ko.observableArray();
+	};
+
+	simulationSettings.nodeMessageProcessor = function(node, message, sendMessage){
+		node.display.incomingMessageStatus('Processing ' + message.name);
+
+		return new Promise(function(resolve){
+			local.log('node[' + node.display.description() + ']: processing message ' + message.display.description());
+			resolve();
+		});
+	};
+
+	simulationSettings.nodeGoOnlineProcessor = function(node, sendMessage){
+		local.log('node[' + node.display.description() + ']: going online');
+	};
+
+	simulationSettings.nodeGoOfflineProcessor = function(node, sendMessage){
+		local.log('node[' + node.display.description() + ']: going offline');
+	};
+
+	// and go
+	var vm = new ViewModel(simulationSettings, displaySettings, Network);
+	vm.setAvailableHashKeys(['A','B','C','D','E','F','G']);
+	vm.speedSlow();
+	ko.applyBindings(vm);
+
+	// what do we need to define
+	// Node:
+	//	f: receive processing - turn an incoming message into a response
+	//	f: online processing - what do we do to go from offline to online while in the "restoring" state?
+	//	f: offline processing - what do we do when we go offline?
+	//	p: access to "special network status" property
+	//  p: access to send/receive additional messages during reception, online, offline calls
+	//	?: storage - could be custom since we are doing receive msg handling
+
+	// Network:
+	//	f: initialization - generate nodes
+	//	f: monitoring cycle - any potential monitoring
+
+
+});
+
+</script>
+</html>
