@@ -29,7 +29,7 @@ function(ko,
 		};
 
 		self._generateMessageDeliveryTime = function(){
-			return simulationSettings.messageDeliveryTime() + ((Math.random() - .5) * simulationSettings.messageDeliveryJitter());
+			return simulationSettings.timeMultiplier() * (simulationSettings.messageDeliveryTime() + (Math.random() - .5) * simulationSettings.messageDeliveryJitter());
 		};
 
 		self.deliverMessage = function(message){

@@ -142,14 +142,14 @@ function(ko,
 
 		self.speedFast = function(){
 			if(simulationSettings.timeMultiplier() > 1){
-				simulationSettings.timeMultiplier(1);
+				simulationSettings.timeMultiplier(simulationSettings.timeFast);
 			}
 		};
 		self.speedSlow = function(){
-			simulationSettings.timeMultiplier(4);
+			simulationSettings.timeMultiplier(simulationSettings.timeSlow);
 		};
 		self.toggleSpeed = function(){
-			if(simulationSettings.timeMultiplier() > 1){
+			if(simulationSettings.timeMultiplier() > simulationSettings.timeFast){
 				self.speedFast();
 			}
 			else{

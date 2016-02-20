@@ -150,9 +150,11 @@ function(ko,
 	// simulation settings + behavior
 	var simulationSettings = { 
 		timeMultiplier: ko.observable(1),
-		messageAtNodeDelay: ko.observable(200),
+		timeSlow: 5,
+		timeFast: 1,
 		messageDeliveryTime: ko.observable(500),
-		messageDeliveryJitter: ko.observable(200)
+		messageDeliveryJitter: ko.observable(300),
+		messageAtNodeDelay: ko.observable(10)
 	};
 
 	var local = { 
