@@ -1,8 +1,10 @@
 define(['knockout',
 		'bluebird',
+		'app2/Constants',
 		'app2/MessageResponse' ],
 function(ko,
 		 Promise,
+		 CONST,
 		 MessageResponse ){
 
 	function Node(simulationSettings, displaySettings, name, startingStatus, sendMessage){
@@ -37,14 +39,25 @@ function(ko,
 		// --- execution
 
 		self.setOnline = function(){
-			return Promise.resolve().then(function(){
-				return simulationSettings.nodeGoOnlineProcessor();
+			return Promise.resolve()
+			.then(function(){
+				self.status(CONST.NodeStatus.Restoring);
+			})
+			.then(function(){
+				return simulationSettings.nodeGoOnlineProcessor(self, sendMessage);
+			})
+			.then(function(){
+				self.status(CONST.NodeStatus.Online);
 			});
 		};
 
 		self.setOffline = function(){
-			return Promise.resolve().then(function(){
-				return simulationSettings.nodeGoOfflineProcessor();
+			return Promise.resolve()
+			.then(function(){
+				return simulationSettings.nodeGoOfflineProcessor(self, sendMessage);
+			})
+			.then(function(){
+				self.status(CONST.NodeStatus.Offline);
 			});
 		};
 

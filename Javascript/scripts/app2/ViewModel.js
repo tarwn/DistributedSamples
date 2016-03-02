@@ -381,7 +381,7 @@ function(ko,
 				var message = new Message(simulationSettings, externalNetworkGateway, targetNode, "M" + msgCount, CONST.MessageTypes.Write, randomDataKey + ":" + newValue);
 				self.network.deliverMessage(message).then(function(response){
 					if(response.statusCode == 200){
-						self.potentialDataValues[randomDataKey].unshift(newValue);
+						self.potentialDataKeys[randomDataKey].unshift(newValue);
 					}
 
 					var result = evaluateWriteResponse(randomDataKey, response);
@@ -421,6 +421,17 @@ function(ko,
 			}
 		}
 
+		function selectRandomOnlineNode(){
+			var onlineNodes = self.network.nodes().filter(function(node){
+				return node.status() != CONST.NodeStatus.Offline;
+			});
+			if(onlineNodes.length == 0)
+				return null;
+
+			var randomNodeIndex = Math.floor(Math.random() * onlineNodes.length);
+			return onlineNodes[randomNodeIndex];
+		}
+
 		function evaluateWriteResponse(dataKey, response){
 			if(response.statusCode == 200){
 				return new Expectation('Write', 'Good', "Write " + response.originalMessage.payload + " -> " + response.display.statusDescription);
@@ -432,7 +443,7 @@ function(ko,
 
 		function evaluateReadResponse(dataKey, response){
 			if(response.statusCode == 200){
-				var historyNumber = self.potentialDataValues[dataKey].indexOf(response.payload);
+				var historyNumber = self.potentialDataKeys[dataKey].indexOf(response.payload);
 				if(historyNumber == -1){
 					return new Expectation('Read', 'InvalidValue', "Read " + response.originalMessage.payload + " -> " + response.display.statusDescription + " :: Received Invalid Value => " + response.payload);
 				}
@@ -456,7 +467,7 @@ function(ko,
 				return;
 			self.isMonkeyRunning(true);
 
-			var targetNode = self.network.selectRandomOnlineNode();
+			var targetNode = selectRandomOnlineNode();
 			var offlineDiff = simulationSettings.maximumOfflineNodeRepairTime() - 1000;
 			var onlineTime = (Math.random() * offlineDiff) + 1000;
 

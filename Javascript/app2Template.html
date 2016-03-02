@@ -110,7 +110,7 @@
 					<div class="node-storage">
 						Storage:
 						<!-- ko foreach: storage -->
-						<div data-bind="text: display.description" class="node-storage-slot"></div>
+						<div data-bind="text: key + ':' + value()" class="node-storage-slot"></div>
 						<!-- /ko -->
 						<div data-bind="if: storage().length == 0, visible: storage().length == 0" class="node-storage-slot-empty">empty</div>
 					</div>
@@ -130,12 +130,14 @@ require(["knockout",
 		 "bluebird",
 		 "app2/Constants",
 		 "app2/ViewModel",
+		 "app2/MessageResponse",
 		 "app2/Network",
 		 "app2/Node"],
 function(ko,
 		 Promise,
 		 CONST,
 		 ViewModel,
+		 MessageResponse,
 		 Network,
 		 Node){
 	
@@ -152,13 +154,40 @@ function(ko,
 		timeMultiplier: ko.observable(1),
 		timeSlow: 5,
 		timeFast: 1,
+		
 		messageDeliveryTime: ko.observable(500),
 		messageDeliveryJitter: ko.observable(300),
-		messageAtNodeDelay: ko.observable(10)
+		messageAtNodeDelay: ko.observable(10),
+
+		maximumOfflineNodeRepairTime: ko.observable(10000),
+		minimumTimeBetweenOutages: ko.observable(5000),
+		maximumTimeBetweenOutages: ko.observable(15000)
 	};
 
 	var local = { 
 		log: function(o) { console.log(o) }
+	};
+
+	var perfectCheatingStorage = {
+		actualStore: {},
+		displayStore: ko.observableArray()
+	};
+	perfectCheatingStorage.get = function(key){
+		if(perfectCheatingStorage.actualStore[key] != null){
+			return perfectCheatingStorage.actualStore[key]();
+		}
+		else{
+			return null;
+		}
+	};
+	perfectCheatingStorage.put = function(key, value){
+		if(perfectCheatingStorage.actualStore[key] != null){
+			perfectCheatingStorage.actualStore[key](value);
+		}
+		else{
+			perfectCheatingStorage.actualStore[key] = ko.observable(value);
+			perfectCheatingStorage.displayStore.push({ key: key, value: perfectCheatingStorage.actualStore[key] });
+		}
 	};
 
 	simulationSettings.viewModelInitialize = function(network){
@@ -190,14 +219,36 @@ function(ko,
 		node.display.incomingMessageStatusIsEmpty = ko.computed(function(){
 			return node.display.incomingMessageStatus() == null;
 		});
-		node.storage = ko.observableArray();
+		node.storage = ko.computed(function(){
+			return perfectCheatingStorage.displayStore().sort(function(a,b){
+				return a.key.localeCompare(b.key); 
+			})
+		});
 	};
 
 	simulationSettings.nodeMessageProcessor = function(node, message, sendMessage){
 		node.display.incomingMessageStatus('Processing ' + message.name);
 
+		if(message.type == CONST.MessageTypes.Write){
+			var messageContent = message.payload.split(":");
+			perfectCheatingStorage.put(messageContent[0], messageContent[1]);
+			node.display.incomingMessageStatus(null);
+			return new MessageResponse(simulationSettings, message, 200, "Stored");
+		}
+		else if(message.type == CONST.MessageTypes.Read){
+			node.display.incomingMessageStatus(null);
+			var value = perfectCheatingStorage.get(message.payload);
+			if(value != null){
+				return new MessageResponse(simulationSettings, message, 200, "Read", value);
+			}
+			else{
+				return new MessageResponse(simulationSettings, message, 404, "Not Found", null);
+			}
+		}
+
 		return new Promise(function(resolve){
 			local.log('node[' + node.display.description() + ']: processing message ' + message.display.description());
+			node.display.incomingMessageStatus(null);
 			resolve();
 		});
 	};
